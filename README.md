@@ -136,6 +136,20 @@ hasta tener un entorno físico completo para desarrollar y depurar esa
 plataforma como corresponde — de momento la única máquina Linux disponible es
 de pruebas puntuales, no un entorno de desarrollo real.
 
+## Estrategia de ramas
+
+`main` es la única fuente de verdad y la línea oficial (Windows). Las
+diferencias entre sistemas operativos se resuelven **dentro de `main`** —
+`#[cfg(target_os = "...")]` en Rust, archivos `tauri.<os>.conf.json` — no con
+una rama por plataforma que viva para siempre.
+
+Las ramas tipo `Linux_dev` son **temporales**: sirven para explorar o arreglar
+algo específico de una plataforma (p. ej. el tray icon y el comportamiento en
+segundo plano en Linux) sin tocar `main` mientras está roto. Una vez que
+funciona, se fusiona de vuelta a `main` y se borra. No se mantienen como
+"ecosistemas paralelos" — menos ramas significa menos aislamiento a corto
+plazo, pero mucha menos deuda de sincronización a largo plazo.
+
 ## Estructura
 
 ```
