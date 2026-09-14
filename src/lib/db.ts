@@ -23,8 +23,15 @@ function getDb(): Promise<Database> {
 
 export async function listItems(): Promise<Item[]> {
   const db = await getDb();
+  // Un item archivado normal (suelto, sin regla) se excluye acá para no
+  // acarrear para siempre filas ya resueltas. La EXCEPCIÓN es un item
+  // archivado que pertenece a una recurrencia (rule_id no nulo): esa fila
+  // es la prueba de que esa fecha puntual ya se resolvió, y mergeOccurrences
+  // (recurrence.ts) la necesita para no volver a generar la misma ocurrencia
+  // como pendiente. Igual nunca se ve en pantalla — ninguna vista filtra por
+  // status='archivada'.
   return await db.select<Item[]>(
-    "SELECT * FROM item WHERE status != 'archivada' ORDER BY COALESCE(fixed_time, due_time) ASC"
+    "SELECT * FROM item WHERE status != 'archivada' OR rule_id IS NOT NULL ORDER BY COALESCE(fixed_time, due_time) ASC"
   );
 }
 

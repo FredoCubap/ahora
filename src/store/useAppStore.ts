@@ -16,6 +16,7 @@ interface AppState {
   completeItem: (item: Item) => Promise<void>;
   skipItem: (item: Item) => Promise<void>;
   snoozeItem: (item: Item, minutes: number) => Promise<void>;
+  deleteItem: (item: Item) => Promise<void>;
   updateSettings: (partial: Partial<Omit<Settings, "id">>) => Promise<void>;
   archiveCompleted: () => Promise<void>;
 }
@@ -85,6 +86,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   snoozeItem: async (item, minutes) => {
     const id = await resolveId(item, get().rules);
     await db.snoozeItem(id, minutes);
+    await get().refresh();
+  },
+
+  deleteItem: async (item) => {
+    // Borrar la fila de una excepción de recurrencia la "resucitaría": es la
+    // misma causa del bug que arreglamos en listItems (ver comentario ahí).
+    // Para "no quiero esta ocurrencia" ya existe skipItem ("Saltar"), que
+    // deja la fila puesta como saltada en vez de borrarla.
+    if (item.rule_id != null) {
+      throw new Error("No se puede borrar una ocurrencia de una recurrencia — usá 'Saltar'.");
+    }
+    if (item.id == null) {
+      throw new Error("Ítem sin id: no se puede borrar.");
+    }
+    await db.deleteItem(item.id);
     await get().refresh();
   },
 

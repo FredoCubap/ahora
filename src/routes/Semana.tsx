@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { Header } from "../components/Header";
 import { ItemRow } from "../components/ItemRow";
@@ -39,10 +40,20 @@ export function Semana() {
   const items = useAppStore((s) => s.items);
   const refresh = useAppStore((s) => s.refresh);
   const completeItem = useAppStore((s) => s.completeItem);
+  const location = useLocation();
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // El link "Backlog" de BottomNav apunta a /semana#backlog. HashRouter usa
+  // el hash del navegador para el ruteo en sí, así que el "sub-hash" no
+  // dispara el scroll nativo del navegador — hay que hacerlo a mano.
+  useEffect(() => {
+    if (location.hash === "#backlog") {
+      document.getElementById("backlog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [location.hash]);
 
   const now = new Date();
   const monday = startOfWeek(now);

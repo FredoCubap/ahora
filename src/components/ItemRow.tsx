@@ -3,6 +3,7 @@ import { MorphIcon } from "morphicons/react";
 import { Circle, CheckCircle2 } from "lucide";
 import { Item } from "../lib/types";
 import { formatHM, formatRelative } from "../lib/formatTime";
+import { ItemActions } from "./ItemActions";
 
 type Variant = "vencida" | "destacado" | "compacto";
 
@@ -62,6 +63,7 @@ export function ItemRow({ item, variant, onComplete }: ItemRowProps) {
             {time ? `vencía ${formatHM(time)} · ${formatRelative(time)}` : "vencida"}
           </div>
         </div>
+        <ItemActions item={item} />
         {checkbox("var(--ahora-urgent)", 14)}
       </div>
     );
@@ -100,6 +102,7 @@ export function ItemRow({ item, variant, onComplete }: ItemRowProps) {
             </div>
           )}
         </div>
+        <ItemActions item={item} />
         {checkbox("var(--ahora-border)", 15)}
       </div>
     );
@@ -114,6 +117,7 @@ export function ItemRow({ item, variant, onComplete }: ItemRowProps) {
       <div className="flex-1 min-w-0 text-[13px]" style={{ color: "var(--ahora-text-muted)" }}>
         {item.title}
       </div>
+      <ItemActions item={item} />
       {checkbox("var(--ahora-border)", 11)}
     </div>
   );
