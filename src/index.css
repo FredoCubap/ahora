@@ -1,14 +1,17 @@
 @import "tailwindcss";
-@plugin "daisyui";
-
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-}
+@import "./styles/tokens.css";
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
   min-height: 100vh;
+  font-family: "Karla", system-ui, sans-serif;
+  background: var(--ahora-bg);
+  color: var(--ahora-text);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: "Nunito", system-ui, sans-serif;
 }

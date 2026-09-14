@@ -1,0 +1,57 @@
+/* Tokens de "Ahora" — valores copiados del canvas de diseño aprobado
+   (https://claude.ai/code/artifact/ac5a53ed-e98d-47f5-9daf-cd0a582300e9).
+   El acento es la única variable pensada para cambiar (ver Ajustes). */
+
+:root {
+  color-scheme: light;
+
+  --ahora-bg: #f8f4ec;
+  --ahora-bg-elevated: #fffdf8;
+  --ahora-text: #2c2a24;
+  --ahora-text-muted: #726b5c;
+  --ahora-text-faint: #9a927f;
+  --ahora-border: #e6ddc9;
+  --ahora-chip-bg: #f0ead9;
+
+  --ahora-urgent: #a4522f;
+  --ahora-urgent-bg: #f3e2d3;
+
+  --ahora-accent: #7c97a6;
+  --ahora-accent-text: #fbfaf5;
+}
+
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+
+    --ahora-bg: #23211d;
+    --ahora-bg-elevated: #2a2823;
+    --ahora-text: #eeeae2;
+    --ahora-text-muted: #b7b0a3;
+    --ahora-text-faint: #8a8378;
+    --ahora-border: #38352e;
+    --ahora-chip-bg: #2e2b25;
+
+    --ahora-urgent: #e0977a;
+    --ahora-urgent-bg: #3a2a22;
+
+    --ahora-accent-text: #20261d;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ahora-bg: #23211d;
+  --ahora-bg-elevated: #2a2823;
+  --ahora-text: #eeeae2;
+  --ahora-text-muted: #b7b0a3;
+  --ahora-text-faint: #8a8378;
+  --ahora-border: #38352e;
+  --ahora-chip-bg: #2e2b25;
+
+  --ahora-urgent: #e0977a;
+  --ahora-urgent-bg: #3a2a22;
+
+  --ahora-accent-text: #20261d;
+}
