@@ -3,6 +3,7 @@ import { MorphIcon } from "morphicons/react";
 import { Clock, Check } from "lucide";
 import { useAvisoEngine } from "../hooks/useAvisoEngine";
 import { formatHM } from "../lib/formatTime";
+import { notifyNative } from "../lib/nativeNotify";
 
 export function AvisoBanner() {
   const { activeItem, respond, snoozeMinutes } = useAvisoEngine();
@@ -21,6 +22,11 @@ export function AvisoBanner() {
       // interacción del usuario en la ventana. No hay mucho más que hacer —
       // el banner visual se ve igual.
     });
+    // Notificación nativa del SO — la única forma de enterarte si la
+    // ventana está minimizada/en bandeja. Independiente del sonido de
+    // arriba: si el SO deniega el permiso, esto no hace nada y el resto
+    // sigue igual.
+    notifyNative(activeItem.title, "Ahora · es la hora");
   }, [activeItem]);
 
   if (!activeItem) return null;

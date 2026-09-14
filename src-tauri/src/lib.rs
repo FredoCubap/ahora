@@ -1,5 +1,10 @@
 use chrono::{Datelike, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+    Manager, WindowEvent,
+};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 // Esquema tomado de docs/FILOSOFIA.md ("Esquema de datos (propuesto)").
@@ -261,12 +266,79 @@ fn expand_recurrences(rules: Vec<RecurrenceRule>, from: String, to: String) -> R
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .plugin(tauri_plugin_notification::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:agenda.db", migrations())
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![expand_recurrences])
+        .setup(|app| {
+            // Bandeja del sistema: un ícono con un menú de 2 opciones. Reusa
+            // el ícono de la app (el mismo .ico del instalador) en vez de
+            // cargar una imagen aparte.
+            let abrir = MenuItem::with_id(app, "abrir", "Abrir Ahora", true, None::<&str>)?;
+            let salir = MenuItem::with_id(app, "salir", "Salir", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&abrir, &salir])?;
+
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "abrir" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    // app.exit() corta el proceso directo, sin pasar por el
+                    // "on_window_event" de abajo — por eso Salir sí cierra
+                    // de verdad y la X de la ventana no.
+                    "salir" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        button_state: tauri::tray::MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // "Cerrar" la ventana (la X) la oculta en vez de matar el
+            // proceso — así la app sigue viva en bandeja, con el motor de
+            // avisos corriendo, aunque no se vea ninguna ventana.
+            if let Some(window) = app.get_webview_window("main") {
+                // `window` queda "movido" adentro del closure de abajo, así
+                // que necesitamos una copia propia para poder llamar
+                // `.hide()` desde ahí — WebviewWindow es barato de clonar
+                // (es un handle, no la ventana entera).
+                let window_to_hide = window.clone();
+                window.on_window_event(move |event| {
+                    if let WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = window_to_hide.hide();
+                        // ver arriba: la única forma de cerrar de verdad es
+                        // el ítem "Salir" del menú de bandeja.
+                    }
+                });
+            }
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

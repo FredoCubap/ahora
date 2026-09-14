@@ -7,12 +7,15 @@ import { Semana } from "./routes/Semana";
 import { Ajustes } from "./routes/Ajustes";
 import { AvisoBanner } from "./components/AvisoBanner";
 import { CapturaModal } from "./components/CapturaModal";
+import { BottomNav } from "./components/BottomNav";
 
 function App() {
   const refresh = useAppStore((s) => s.refresh);
   const [capturaOpen, setCapturaOpen] = useState(false);
   const location = useLocation();
-  const showCapturaButton = location.pathname !== "/ajustes";
+  // Ajustes se navega "hacia adentro" (con flecha de volver en el Header),
+  // no es una pestaña más — por eso no lleva ni la barra inferior ni el "+".
+  const showChrome = location.pathname !== "/ajustes";
 
   useEffect(() => {
     refresh();
@@ -27,7 +30,7 @@ function App() {
           <Route path="/ajustes" element={<Ajustes />} />
         </Routes>
 
-        {showCapturaButton && (
+        {showChrome && (
           <button
             onClick={() => setCapturaOpen(true)}
             aria-label="Nuevo ítem"
@@ -38,11 +41,14 @@ function App() {
               right: "max(24px, calc(50% - 216px))",
               bottom: 88,
               background: "var(--ahora-accent)",
+              zIndex: 40,
             }}
           >
             <Plus size={22} color="var(--ahora-accent-text)" />
           </button>
         )}
+
+        {showChrome && <BottomNav />}
 
         <CapturaModal isOpen={capturaOpen} onClose={() => setCapturaOpen(false)} />
         <AvisoBanner />

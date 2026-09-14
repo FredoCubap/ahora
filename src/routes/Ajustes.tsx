@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from "react";
+import { disable as disableAutostart, enable as enableAutostart, isEnabled as isAutostartEnabled } from "@tauri-apps/plugin-autostart";
 import { useAppStore } from "../store/useAppStore";
 import { Header } from "../components/Header";
 import { useTheme, ThemeChoice } from "../hooks/useTheme";
@@ -48,6 +49,20 @@ export function Ajustes() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const archiveCompleted = useAppStore((s) => s.archiveCompleted);
   const { choice, setChoice } = useTheme();
+
+  const [autostart, setAutostart] = useState(false);
+  useEffect(() => {
+    isAutostartEnabled().then(setAutostart);
+  }, []);
+
+  async function toggleAutostart() {
+    if (autostart) {
+      await disableAutostart();
+    } else {
+      await enableAutostart();
+    }
+    setAutostart(await isAutostartEnabled());
+  }
 
   // Deben llamarse siempre, en el mismo orden, en cada render — por eso van
   // antes del `if (!settings) return null` de abajo (reglas de los Hooks).
@@ -216,6 +231,34 @@ export function Ajustes() {
             }}
           />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5">
+        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+          Sistema
+        </div>
+        <button
+          onClick={toggleAutostart}
+          className="flex items-center justify-between rounded-2xl px-4 py-3.5"
+          style={{ background: "var(--ahora-chip-bg)" }}
+        >
+          <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
+            Iniciar con el sistema
+          </div>
+          <div
+            className="rounded-full flex-shrink-0 flex"
+            style={{
+              width: 34,
+              height: 20,
+              padding: 2,
+              background: autostart ? "var(--ahora-accent)" : "var(--ahora-border)",
+              justifyContent: autostart ? "flex-end" : "flex-start",
+              transition: "background 0.15s",
+            }}
+          >
+            <div className="rounded-full" style={{ width: 16, height: 16, background: "var(--ahora-bg-elevated)" }} />
+          </div>
+        </button>
       </div>
 
       <div className="flex flex-col gap-2.5">

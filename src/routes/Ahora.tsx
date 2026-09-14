@@ -3,7 +3,6 @@ import { Settings as SettingsIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { ItemRow } from "../components/ItemRow";
-import { BottomNav } from "../components/BottomNav";
 import { zonifyToday } from "../lib/zones";
 import { itemKey } from "../lib/types";
 
@@ -26,7 +25,7 @@ export function Ahora() {
   const { vencidas, destacado, resto } = zonifyToday(items);
 
   return (
-    <div className="flex flex-col h-full gap-5 p-6 pb-5">
+    <div className="flex flex-col h-full gap-5 p-6 pb-24">
       <div className="flex justify-between items-start">
         <div className="flex flex-col gap-0.5">
           <h1 className="font-display font-extrabold text-[30px] tracking-tight" style={{ color: "var(--ahora-text)" }}>
@@ -92,8 +91,6 @@ export function Ahora() {
           Nada pendiente por ahora.
         </div>
       )}
-
-      <BottomNav />
     </div>
   );
 }

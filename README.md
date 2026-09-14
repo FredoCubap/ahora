@@ -124,6 +124,18 @@ npm run dev
 npm run tauri build
 ```
 
+## Plataformas soportadas
+
+Por ahora **la línea oficial es Windows** — es donde se compila, se prueba y se
+distribuye el alpha (`.exe` / NSIS).
+
+**Linux está en estudio, no en soporte.** Hubo una compilación de prueba en
+Kubuntu (AppImage) que reveló errores críticos en el tray icon y en el
+comportamiento en segundo plano de la app. No se publicarán builds de Linux
+hasta tener un entorno físico completo para desarrollar y depurar esa
+plataforma como corresponde — de momento la única máquina Linux disponible es
+de pruebas puntuales, no un entorno de desarrollo real.
+
 ## Estructura
 
 ```

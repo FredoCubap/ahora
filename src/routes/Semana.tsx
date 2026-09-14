@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { Header } from "../components/Header";
 import { ItemRow } from "../components/ItemRow";
-import { BottomNav } from "../components/BottomNav";
 import { zonifyToday, backlogItems } from "../lib/zones";
 import { Item, itemKey } from "../lib/types";
 
@@ -81,7 +80,7 @@ export function Semana() {
   const backlog = backlogItems(items);
 
   return (
-    <div className="flex flex-col h-full gap-5 p-6 pb-5 overflow-y-auto">
+    <div className="flex flex-col h-full gap-5 p-6 pb-24 overflow-y-auto">
       <Header title="Semana" subtitle={rangeLabel} />
 
       <div className="flex justify-between">
@@ -148,8 +147,6 @@ export function Semana() {
           <ItemRow key={itemKey(item)} item={item} variant="compacto" onComplete={completeItem} />
         ))}
       </div>
-
-      <BottomNav />
     </div>
   );
 }
