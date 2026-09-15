@@ -16,6 +16,12 @@ export const itemSchema = z.object({
   status: z.enum(STATUSES).default("pendiente"),
   remind_before_min: z.number().nullable().optional(),
   snoozed_until: z.string().nullable().optional(),
+  // "En seguimiento" (docs/FILOSOFIA.md): relleno + sin fixed_time/due_time =
+  // el ítem se comporta como seguimiento, no como cita ni tarea.
+  waiting_on: z.string().nullable().optional(),
+  nag_interval_min: z.number().nullable().optional(),
+  last_nagged_at: z.string().nullable().optional(),
+  nagged_today_count: z.number().default(0),
   rule_id: z.number().nullable().optional(),
   occurrence_date: z.string().nullable().optional(),
   created_at: z.string().optional(),
@@ -37,7 +43,12 @@ export const newItemSchema = itemSchema.omit({
   completed_at: true,
 });
 
-export type NewItem = z.infer<typeof newItemSchema>;
+// z.input (no z.infer/z.output): campos con `.default(...)` — priority,
+// status, nagged_today_count — deben quedar opcionales para quien
+// CONSTRUYE un NewItem antes de parsear. z.infer da el tipo de SALIDA de
+// parse(), donde el default ya se aplicó y por eso son obligatorios; eso
+// forzaría a todo caller a inventarse un valor que igual va a ser pisado.
+export type NewItem = z.input<typeof newItemSchema>;
 
 export const settingsSchema = z.object({
   id: z.literal(1),
@@ -47,6 +58,8 @@ export const settingsSchema = z.object({
   snooze_min: z.number(),
   overdue_retry_min: z.number(),
   overdue_retry_max: z.number(),
+  seguimiento_interval_min: z.number(),
+  seguimiento_daily_cap: z.number(),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

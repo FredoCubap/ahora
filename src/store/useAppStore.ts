@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import * as db from "../lib/db";
+import { isSameLocalDay } from "../lib/formatTime";
 import { addDays, expandRecurrences, mergeOccurrences, toDateStr } from "../lib/recurrence";
 import { Item, NewItem, NewRecurrenceRule, RecurrenceRule, Settings } from "../lib/types";
 
@@ -16,6 +17,7 @@ interface AppState {
   completeItem: (item: Item) => Promise<void>;
   skipItem: (item: Item) => Promise<void>;
   snoozeItem: (item: Item, minutes: number) => Promise<void>;
+  recordSeguimientoNag: (item: Item) => Promise<void>;
   deleteItem: (item: Item) => Promise<void>;
   updateSettings: (partial: Partial<Omit<Settings, "id">>) => Promise<void>;
   archiveCompleted: () => Promise<void>;
@@ -86,6 +88,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   snoozeItem: async (item, minutes) => {
     const id = await resolveId(item, get().rules);
     await db.snoozeItem(id, minutes);
+    await get().refresh();
+  },
+
+  recordSeguimientoNag: async (item) => {
+    const id = await resolveId(item, get().rules);
+    const lastNaggedMs = item.last_nagged_at ? new Date(item.last_nagged_at).getTime() : null;
+    const isNewDay = lastNaggedMs == null || !isSameLocalDay(new Date(lastNaggedMs), new Date());
+    const nextCount = isNewDay ? 1 : item.nagged_today_count + 1;
+    await db.recordSeguimientoNag(id, nextCount);
     await get().refresh();
   },
 

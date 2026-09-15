@@ -78,6 +78,16 @@ export function Ajustes() {
   const retryMaxField = useNumberField(settings?.overdue_retry_max ?? 3, (n) =>
     updateSettings({ overdue_retry_max: n })
   );
+  // seguimiento_interval_min vive en minutos en la DB (default 240 = 4h),
+  // pero para "cada cuánto insiste" un ítem en seguimiento tiene más sentido
+  // pensarlo en horas — se muestra en horas y se convierte al guardar.
+  const seguimientoIntervalField = useNumberField(
+    Math.round((settings?.seguimiento_interval_min ?? 240) / 60),
+    (h) => updateSettings({ seguimiento_interval_min: h * 60 })
+  );
+  const seguimientoCapField = useNumberField(settings?.seguimiento_daily_cap ?? 3, (n) =>
+    updateSettings({ seguimiento_daily_cap: n })
+  );
 
   useEffect(() => {
     refresh();
@@ -190,6 +200,43 @@ export function Ajustes() {
                 className="w-8 text-right bg-transparent outline-none"
               />
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5">
+        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+          Seguimiento
+        </div>
+        <div className="flex flex-col rounded-2xl overflow-hidden" style={{ background: "var(--ahora-chip-bg)" }}>
+          <div
+            className="flex items-center justify-between px-4 py-3.5"
+            style={{ borderBottom: "1px solid var(--ahora-border)" }}
+          >
+            <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
+              Insistir cada
+            </div>
+            <div className="flex items-center gap-1 text-sm" style={{ color: "var(--ahora-text-muted)" }}>
+              <input
+                type="number"
+                min={1}
+                {...seguimientoIntervalField}
+                className="w-10 text-right bg-transparent outline-none"
+              />
+              h
+            </div>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
+              Máximo por día
+            </div>
+            <input
+              type="number"
+              min={1}
+              {...seguimientoCapField}
+              className="w-14 text-right text-sm bg-transparent outline-none"
+              style={{ color: "var(--ahora-text-muted)" }}
+            />
           </div>
         </div>
       </div>

@@ -1,16 +1,26 @@
 import { NavLink } from "react-router-dom";
+import { Plus } from "lucide-react";
+
+const BAR_HEIGHT = 56;
+const GAP_ABOVE_BAR = 14;
+const FAB_SIZE = 52;
+
+/** Altura total a reservar (`pb-*`) en el contenido de cada pantalla para que
+ * nada quede tapado detrás de esta barra + el "+". Un solo número, calculado
+ * acá — así nunca se desalinea de lo que esta barra realmente ocupa. */
+export const BOTTOM_SAFE_AREA = BAR_HEIGHT + GAP_ABOVE_BAR + FAB_SIZE + GAP_ABOVE_BAR;
+
+interface BottomNavProps {
+  onAdd: () => void;
+}
 
 /**
- * Fija abajo del todo, centrada en la misma columna que el resto de la app
- * (mismo patrón que AvisoBanner: un wrapper fixed de ancho completo, con
- * el contenido real centrado adentro). Antes vivía DENTRO de cada pantalla
- * con `mt-auto` — en Semana, que tiene scroll propio y contenido más largo,
- * eso hacía que ni la barra ni el botón "+" (que sí es fixed) coincidieran
- * con el final real del contenido: el "+" quedaba pisando ítems al hacer
- * scroll. Cada pantalla reserva espacio abajo (`pb-24`) para que nada quede
- * tapado detrás de esta barra ni del botón "+".
+ * Barra fija abajo del todo + el "+" de captura rápida, como UN SOLO bloque:
+ * el "+" vive *dentro* del mismo wrapper centrado que la barra (en vez de
+ * ser un `fixed` aparte con su propio cálculo de centrado), así hereda el
+ * centrado de la barra gratis y nunca se puede desalinear de la columna.
  */
-export function BottomNav() {
+export function BottomNav({ onAdd }: BottomNavProps) {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "font-bold text-[12px]" : "text-[12px]";
   const linkStyle = (isActive: boolean) => ({
@@ -19,19 +29,40 @@ export function BottomNav() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 flex justify-center pointer-events-none z-40">
-      <div
-        className="w-full max-w-[480px] flex gap-5 justify-center px-6 py-3.5 pointer-events-auto"
-        style={{ background: "var(--ahora-bg)", borderTop: "1px solid var(--ahora-border)" }}
-      >
-        <NavLink to="/" end className={linkClass} style={({ isActive }) => linkStyle(isActive)}>
-          Hoy
-        </NavLink>
-        <NavLink to="/semana" className={linkClass} style={({ isActive }) => linkStyle(isActive)}>
-          Semana
-        </NavLink>
-        <NavLink to="/semana#backlog" className={linkClass} style={() => linkStyle(false)}>
-          Backlog
-        </NavLink>
+      <div className="relative w-full max-w-[480px]">
+        <div
+          className="flex items-center justify-center gap-5 px-6 pointer-events-auto"
+          style={{
+            height: BAR_HEIGHT,
+            background: "var(--ahora-bg)",
+            borderTop: "1px solid var(--ahora-border)",
+          }}
+        >
+          <NavLink to="/" end className={linkClass} style={({ isActive }) => linkStyle(isActive)}>
+            Hoy
+          </NavLink>
+          <NavLink to="/semana" className={linkClass} style={({ isActive }) => linkStyle(isActive)}>
+            Semana
+          </NavLink>
+          <NavLink to="/semana#backlog" className={linkClass} style={() => linkStyle(false)}>
+            Backlog
+          </NavLink>
+        </div>
+
+        <button
+          onClick={onAdd}
+          aria-label="Nuevo ítem"
+          className="absolute flex items-center justify-center rounded-full shadow-lg pointer-events-auto"
+          style={{
+            width: FAB_SIZE,
+            height: FAB_SIZE,
+            right: 24,
+            bottom: BAR_HEIGHT + GAP_ABOVE_BAR,
+            background: "var(--ahora-accent)",
+          }}
+        >
+          <Plus size={22} color="var(--ahora-accent-text)" />
+        </button>
       </div>
     </div>
   );

@@ -16,6 +16,10 @@
   --ahora-urgent: #a4522f;
   --ahora-urgent-bg: #f3e2d3;
 
+  /* "En seguimiento": ni el acento (ahora/prioridad) ni el urgente (alarma) —
+     color propio, para no competir por atención (ver docs/FILOSOFIA.md). */
+  --ahora-seguimiento: #9c8aa8;
+
   --ahora-accent: #7c97a6;
   --ahora-accent-text: #fbfaf5;
 }
@@ -35,6 +39,8 @@
     --ahora-urgent: #e0977a;
     --ahora-urgent-bg: #3a2a22;
 
+    --ahora-seguimiento: #b7a3c9;
+
     --ahora-accent-text: #20261d;
   }
 }
@@ -52,6 +58,8 @@
 
   --ahora-urgent: #e0977a;
   --ahora-urgent-bg: #3a2a22;
+
+  --ahora-seguimiento: #b7a3c9;
 
   --ahora-accent-text: #20261d;
 }

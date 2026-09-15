@@ -19,6 +19,10 @@ export function formatHM(iso: string): string {
     .padStart(2, "0")}`;
 }
 
+export function isSameLocalDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
 export function formatRelative(iso: string, now: Date = new Date()): string {
   const diffMin = Math.round((now.getTime() - new Date(iso).getTime()) / 60_000);
   if (diffMin < 1) return "ahora";

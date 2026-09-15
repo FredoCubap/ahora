@@ -1,3 +1,4 @@
+import { isSameLocalDay } from "./formatTime";
 import { Item, itemKey, Settings } from "./types";
 
 export interface AvisoLogEntry {
@@ -62,6 +63,46 @@ export function computeActiveAviso(
       // lógica normal de abajo (vencida/reintentos), en vez de callarse para
       // siempre. Sin este fall-through, un pospón sin respuesta silenciaba el
       // ítem hasta que se completara/saltara manualmente.
+    }
+
+    // "En seguimiento" (docs/FILOSOFIA.md): sin fixed_time/due_time, con
+    // waiting_on relleno. No tiene hora que se pase, así que no usa
+    // cortesía/al-filo/vencida — tiene su propio ritmo espaciado, con techo
+    // diario. `last_nagged_at`/`nagged_today_count` son columnas persistidas
+    // (a diferencia de `log`, que se pierde al reiniciar la app) porque el
+    // techo diario debe sobrevivir un reinicio: si no, reiniciar la app
+    // sería una forma de "resetear" la insistencia y volver a sonar de una.
+    if (!item.fixed_time && !item.due_time && item.waiting_on) {
+      const lastNaggedMs = item.last_nagged_at ? new Date(item.last_nagged_at).getTime() : null;
+      const isNewDay = lastNaggedMs == null || !isSameLocalDay(new Date(lastNaggedMs), now);
+      const countToday = isNewDay ? 0 : item.nagged_today_count;
+      if (countToday >= settings.seguimiento_daily_cap) continue;
+
+      const intervalMs = (item.nag_interval_min ?? settings.seguimiento_interval_min) * 60_000;
+      const key = `seguimiento:${key0}`;
+
+      // Si nunca avisó (`last_nagged_at` null), el primer aviso TAMBIÉN debe
+      // esperar un intervalo completo — no disparar apenas se crea el ítem
+      // (bug real, reportado por Fredo: el banner sonaba al toque de crear
+      // la tarea). La base de ese primer conteo es "cuándo lo vio la app por
+      // primera vez" (acá, en `log`), no `created_at`: esa columna sale del
+      // `DEFAULT (datetime('now'))` de SQLite, que es UTC, mientras el resto
+      // de la app guarda hora local (ver toLocalIso) — comparar esa fecha
+      // directo contra `now` corre el cálculo por el offset del huso horario.
+      if (!log.has(key)) log.set(key, { count: 0, lastFiredAt: nowMs });
+      const entry = log.get(key)!;
+      const baselineMs = lastNaggedMs ?? entry.lastFiredAt;
+      if (nowMs < baselineMs + intervalMs) continue;
+
+      // Guarda en memoria además de en la columna persistida: entre que este
+      // aviso dispara y que el `refresh()` que dispara lo escribe termina de
+      // ida y vuelta a la DB, `items` en el store todavía trae el
+      // `last_nagged_at` viejo — sin este chequeo, el próximo tick (20 s
+      // después) volvería a considerarlo elegible y dispararía dos veces.
+      if (lastNaggedMs != null && nowMs - entry.lastFiredAt < intervalMs) continue;
+
+      log.set(key, { count: entry.count + 1, lastFiredAt: nowMs });
+      return item;
     }
 
     const relevantTime = item.due_time ?? item.fixed_time;

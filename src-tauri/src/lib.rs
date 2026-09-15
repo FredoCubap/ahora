@@ -83,13 +83,35 @@ CREATE TABLE settings (
 INSERT INTO settings (id) VALUES (1);
 "#;
 
+// Ítems "en seguimiento" (docs/FILOSOFIA.md, sección "Ítems en seguimiento").
+// Un ítem es "en seguimiento" cuando `waiting_on` está relleno y
+// `fixed_time`/`due_time` están vacíos: no tiene hora que se pase, así que
+// necesita su propio ritmo de aviso en vez del de cortesía/al filo/vencido.
+const SCHEMA_V2: &str = r#"
+ALTER TABLE item ADD COLUMN waiting_on TEXT;
+ALTER TABLE item ADD COLUMN nag_interval_min INTEGER;
+ALTER TABLE item ADD COLUMN last_nagged_at TEXT;
+ALTER TABLE item ADD COLUMN nagged_today_count INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE settings ADD COLUMN seguimiento_interval_min INTEGER NOT NULL DEFAULT 240;
+ALTER TABLE settings ADD COLUMN seguimiento_daily_cap INTEGER NOT NULL DEFAULT 3;
+"#;
+
 fn migrations() -> Vec<Migration> {
-    vec![Migration {
-        version: 1,
-        description: "item_recurrence_rule_settings",
-        sql: SCHEMA_V1,
-        kind: MigrationKind::Up,
-    }]
+    vec![
+        Migration {
+            version: 1,
+            description: "item_recurrence_rule_settings",
+            sql: SCHEMA_V1,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "seguimiento",
+            sql: SCHEMA_V2,
+            kind: MigrationKind::Up,
+        },
+    ]
 }
 
 // --- Primer comando Rust real de la app ---

@@ -46,6 +46,12 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
   // `recurrence_rule` y las fechas puntuales se calculan solas (ver
   // src-tauri/src/lib.rs `expand_recurrences`).
   const [repeat, setRepeat] = useState(false);
+
+  // "En seguimiento" (docs/FILOSOFIA.md): sin fixed_time/due_time, con
+  // waiting_on relleno. Excluyente con Repetir — no tiene sentido repetir
+  // algo que no tiene ni hora ni fecha.
+  const [seguimiento, setSeguimiento] = useState(false);
+  const [waitingOn, setWaitingOn] = useState("");
   const [freq, setFreq] = useState<Freq>("diaria");
   const [intervalN, setIntervalN] = useState(1);
   const [weekdays, setWeekdays] = useState<number[]>([]);
@@ -57,7 +63,10 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
 
   if (!isOpen) return null;
 
-  const parsed = repeat ? { title: "", fixed_time: undefined, due_time: undefined, label: "" } : parseQuickCapture(text || "");
+  const parsed =
+    repeat || seguimiento
+      ? { title: "", fixed_time: undefined, due_time: undefined, label: "" }
+      : parseQuickCapture(text || "");
 
   function reset() {
     setText("");
@@ -66,6 +75,8 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
     setRemindBefore(10);
     setDetailsOpen(false);
     setRepeat(false);
+    setSeguimiento(false);
+    setWaitingOn("");
     setFreq("diaria");
     setIntervalN(1);
     setWeekdays([]);
@@ -80,10 +91,30 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
     setWeekdays((prev) => (prev.includes(n) ? prev.filter((d) => d !== n) : [...prev, n]));
   }
 
+  function toggleRepeat() {
+    setRepeat((v) => {
+      const next = !v;
+      if (next) setSeguimiento(false);
+      return next;
+    });
+  }
+
+  function toggleSeguimiento() {
+    setSeguimiento((v) => {
+      const next = !v;
+      if (next) setRepeat(false);
+      return next;
+    });
+  }
+
   async function handleSave() {
     if (!text.trim() || saving) return;
     if (repeat && freq === "semanal" && weekdays.length === 0) {
       alert("Elegí al menos un día de la semana");
+      return;
+    }
+    if (seguimiento && !waitingOn.trim()) {
+      alert("Contanos qué estás esperando");
       return;
     }
 
@@ -104,6 +135,17 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
           starts_on: startsOn,
           ends_on: endsOn || null,
           active: 1,
+        });
+      } else if (seguimiento) {
+        await addItem({
+          title: text.trim(),
+          notes: notes || null,
+          fixed_time: null,
+          due_time: null,
+          waiting_on: waitingOn.trim(),
+          priority,
+          status: "pendiente",
+          remind_before_min: null,
         });
       } else {
         await addItem({
@@ -151,38 +193,89 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={repeat ? "Título (ej. Tomar agua)" : "Llamar a Juan mañana 15:00"}
+            placeholder={
+              repeat
+                ? "Título (ej. Tomar agua)"
+                : seguimiento
+                  ? "Verificar el reembolso"
+                  : "Llamar a Juan mañana 15:00"
+            }
             className="text-[16px] font-medium bg-transparent outline-none"
             style={{ color: "var(--ahora-text)" }}
           />
-          {!repeat && parsed.label && (
+          {!repeat && !seguimiento && parsed.label && (
             <div className="text-xs" style={{ color: "var(--ahora-accent)" }}>
               se entiende como: {parsed.label}
             </div>
           )}
         </div>
 
-        <button onClick={() => setRepeat((v) => !v)} className="flex items-center gap-2.5 px-1">
+        <div className="flex items-center gap-4 px-1">
+          <button onClick={toggleRepeat} className="flex items-center gap-2.5">
+            <div
+              className="rounded-full flex-shrink-0 flex"
+              style={{
+                width: 30,
+                height: 18,
+                padding: 2,
+                background: repeat ? "var(--ahora-accent)" : "var(--ahora-chip-bg)",
+                justifyContent: repeat ? "flex-end" : "flex-start",
+                transition: "background 0.15s",
+              }}
+            >
+              <div className="rounded-full" style={{ width: 14, height: 14, background: "var(--ahora-bg)" }} />
+            </div>
+            <div
+              className="text-xs font-semibold"
+              style={{ color: repeat ? "var(--ahora-text)" : "var(--ahora-text-faint)" }}
+            >
+              Repetir
+            </div>
+          </button>
+
+          <button onClick={toggleSeguimiento} className="flex items-center gap-2.5">
+            <div
+              className="rounded-full flex-shrink-0 flex"
+              style={{
+                width: 30,
+                height: 18,
+                padding: 2,
+                background: seguimiento ? "var(--ahora-seguimiento)" : "var(--ahora-chip-bg)",
+                justifyContent: seguimiento ? "flex-end" : "flex-start",
+                transition: "background 0.15s",
+              }}
+            >
+              <div className="rounded-full" style={{ width: 14, height: 14, background: "var(--ahora-bg)" }} />
+            </div>
+            <div
+              className="text-xs font-semibold"
+              style={{ color: seguimiento ? "var(--ahora-seguimiento)" : "var(--ahora-text-faint)" }}
+            >
+              En seguimiento
+            </div>
+          </button>
+        </div>
+
+        {seguimiento && (
           <div
-            className="rounded-full flex-shrink-0 flex"
-            style={{
-              width: 30,
-              height: 18,
-              padding: 2,
-              background: repeat ? "var(--ahora-accent)" : "var(--ahora-chip-bg)",
-              justifyContent: repeat ? "flex-end" : "flex-start",
-              transition: "background 0.15s",
-            }}
+            className="flex flex-col gap-2 rounded-2xl p-4"
+            style={{ background: `color-mix(in oklch, var(--ahora-seguimiento) 9%, var(--ahora-chip-bg))` }}
           >
-            <div className="rounded-full" style={{ width: 14, height: 14, background: "var(--ahora-bg)" }} />
+            <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-seguimiento)" }}>
+              Esperando a
+            </div>
+            <input
+              value={waitingOn}
+              onChange={(e) => setWaitingOn(e.target.value)}
+              placeholder="respuesta de Soporte, envío del paquete…"
+              className="text-sm bg-transparent outline-none rounded-lg px-2.5 py-1.5"
+              style={{ ...fieldStyle, border: "1.5px solid var(--ahora-seguimiento)" }}
+            />
+            <div className="text-xs" style={{ color: "var(--ahora-text-faint)" }}>
+              Sin hora ni fecha límite — queda en "En seguimiento" hasta que lo marques Resuelto.
+            </div>
           </div>
-          <div
-            className="text-xs font-semibold"
-            style={{ color: repeat ? "var(--ahora-text)" : "var(--ahora-text-faint)" }}
-          >
-            Repetir
-          </div>
-        </button>
+        )}
 
         {repeat && (
           <div className="flex flex-col gap-3.5 rounded-2xl p-4" style={{ background: "var(--ahora-chip-bg)" }}>
@@ -371,6 +464,7 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
               </div>
             </div>
 
+            {!seguimiento && (
             <div className="flex flex-col gap-1.5">
               <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
                 Recordatorio
@@ -393,6 +487,7 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
                 </select>
               </div>
             </div>
+            )}
           </div>
         )}
 

@@ -64,6 +64,7 @@ export function mergeOccurrences(
       status: "pendiente",
       remind_before_min: rule.remind_before_min ?? null,
       snoozed_until: null,
+      nagged_today_count: 0,
       rule_id: rule.id,
       occurrence_date: occ.date,
     });

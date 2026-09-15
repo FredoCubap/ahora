@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { MorphIcon } from "morphicons/react";
 import { Clock, Check } from "lucide";
-import { useAvisoEngine } from "../hooks/useAvisoEngine";
+import { isSeguimiento, useAvisoEngine } from "../hooks/useAvisoEngine";
 import { formatHM } from "../lib/formatTime";
 import { notifyNative } from "../lib/nativeNotify";
+import { diasAbiertos } from "../lib/zones";
 
 export function AvisoBanner() {
   const { activeItem, respond, snoozeMinutes } = useAvisoEngine();
@@ -25,12 +26,17 @@ export function AvisoBanner() {
     // Notificación nativa del SO — la única forma de enterarte si la
     // ventana está minimizada/en bandeja. Independiente del sonido de
     // arriba: si el SO deniega el permiso, esto no hace nada y el resto
-    // sigue igual.
-    notifyNative(activeItem.title, "Ahora · es la hora");
+    // sigue igual. Un seguimiento no tiene hora: el cuerpo es el contexto
+    // de a qué se espera, no "es la hora".
+    notifyNative(
+      activeItem.title,
+      isSeguimiento(activeItem) ? `Sigue en seguimiento · ${activeItem.waiting_on}` : "Ahora · es la hora"
+    );
   }, [activeItem]);
 
   if (!activeItem) return null;
 
+  const seguimiento = isSeguimiento(activeItem);
   const time = activeItem.fixed_time ?? activeItem.due_time;
 
   async function handle(action: "hecho" | "pospon" | "hoyno") {
@@ -65,34 +71,52 @@ export function AvisoBanner() {
               {activeItem.title}
             </div>
             <div className="text-xs" style={{ color: "var(--ahora-text-muted)" }}>
-              {time ? `es la hora · ${formatHM(time)}` : "es la hora"}
+              {seguimiento
+                ? `${activeItem.waiting_on} · llevas ${diasAbiertos(activeItem)} días`
+                : time
+                ? `es la hora · ${formatHM(time)}`
+                : "es la hora"}
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => handle("hecho")}
-            className="flex-[1.3] text-center py-3 rounded-2xl text-sm font-bold"
-            style={{ background: "var(--ahora-accent)", color: "var(--ahora-accent-text)" }}
-          >
-            Hecho
-          </button>
-          <button
-            onClick={() => handle("pospon")}
-            className="flex-[1.6] text-center py-3 rounded-2xl text-[13px] font-semibold"
-            style={{ color: "var(--ahora-text)", border: "1.5px solid var(--ahora-border)" }}
-          >
-            Pospón {snoozeMinutes} min
-          </button>
-          <button
-            onClick={() => handle("hoyno")}
-            className="flex-1 text-center py-3 rounded-2xl text-[13px]"
-            style={{ color: "var(--ahora-text-faint)" }}
-          >
-            Hoy no
-          </button>
-        </div>
+        {seguimiento ? (
+          // "Ítems en seguimiento" (docs/FILOSOFIA.md): una sola acción,
+          // nunca "Pospón" ni "Hoy no" — no es algo que se reprograma.
+          <div className="flex gap-2">
+            <button
+              onClick={() => handle("hecho")}
+              className="flex-1 text-center py-3 rounded-2xl text-sm font-bold"
+              style={{ background: "var(--ahora-accent)", color: "var(--ahora-accent-text)" }}
+            >
+              Resuelto
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => handle("hecho")}
+              className="flex-[1.3] text-center py-3 rounded-2xl text-sm font-bold"
+              style={{ background: "var(--ahora-accent)", color: "var(--ahora-accent-text)" }}
+            >
+              Hecho
+            </button>
+            <button
+              onClick={() => handle("pospon")}
+              className="flex-[1.6] text-center py-3 rounded-2xl text-[13px] font-semibold"
+              style={{ color: "var(--ahora-text)", border: "1.5px solid var(--ahora-border)" }}
+            >
+              Pospón {snoozeMinutes} min
+            </button>
+            <button
+              onClick={() => handle("hoyno")}
+              className="flex-1 text-center py-3 rounded-2xl text-[13px]"
+              style={{ color: "var(--ahora-text-faint)" }}
+            >
+              Hoy no
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

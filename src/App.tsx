@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { Plus } from "lucide-react";
 import { useAppStore } from "./store/useAppStore";
 import { Ahora } from "./routes/Ahora";
 import { Semana } from "./routes/Semana";
@@ -30,25 +29,7 @@ function App() {
           <Route path="/ajustes" element={<Ajustes />} />
         </Routes>
 
-        {showChrome && (
-          <button
-            onClick={() => setCapturaOpen(true)}
-            aria-label="Nuevo ítem"
-            className="fixed flex items-center justify-center rounded-full shadow-lg"
-            style={{
-              width: 52,
-              height: 52,
-              right: "max(24px, calc(50% - 216px))",
-              bottom: 88,
-              background: "var(--ahora-accent)",
-              zIndex: 40,
-            }}
-          >
-            <Plus size={22} color="var(--ahora-accent-text)" />
-          </button>
-        )}
-
-        {showChrome && <BottomNav />}
+        {showChrome && <BottomNav onAdd={() => setCapturaOpen(true)} />}
 
         <CapturaModal isOpen={capturaOpen} onClose={() => setCapturaOpen(false)} />
         <AvisoBanner />

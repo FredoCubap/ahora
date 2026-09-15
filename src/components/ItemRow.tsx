@@ -3,9 +3,10 @@ import { MorphIcon } from "morphicons/react";
 import { Circle, CheckCircle2 } from "lucide";
 import { Item } from "../lib/types";
 import { formatHM, formatRelative } from "../lib/formatTime";
+import { diasAbiertos } from "../lib/zones";
 import { ItemActions } from "./ItemActions";
 
-type Variant = "vencida" | "destacado" | "compacto";
+type Variant = "vencida" | "destacado" | "compacto" | "seguimiento";
 
 interface ItemRowProps {
   item: Item;
@@ -104,6 +105,39 @@ export function ItemRow({ item, variant, onComplete }: ItemRowProps) {
         </div>
         <ItemActions item={item} />
         {checkbox("var(--ahora-border)", 15)}
+      </div>
+    );
+  }
+
+  if (variant === "seguimiento") {
+    const dias = diasAbiertos(item);
+    return (
+      <div className="flex items-center gap-3" style={{ padding: "10px 0" }}>
+        <div
+          className="flex-shrink-0 rounded-full"
+          style={{ width: 7, height: 7, background: "var(--ahora-seguimiento)" }}
+        />
+        <div className="flex flex-1 min-w-0 flex-col gap-0.5">
+          <div className="text-[14px]" style={{ color: "var(--ahora-text)" }}>
+            {item.title}
+          </div>
+          {item.waiting_on && (
+            <div className="text-xs" style={{ color: "var(--ahora-text-muted)" }}>
+              {item.waiting_on}
+            </div>
+          )}
+        </div>
+        <div
+          className="text-[11px] font-semibold rounded-full flex-shrink-0"
+          style={{
+            color: "var(--ahora-seguimiento)",
+            background: `color-mix(in oklch, var(--ahora-seguimiento) 18%, var(--ahora-bg))`,
+            padding: "3px 9px",
+          }}
+        >
+          {dias === 0 ? "hoy" : dias === 1 ? "1 día" : `${dias} días`}
+        </div>
+        {checkbox("var(--ahora-seguimiento)", 11)}
       </div>
     );
   }

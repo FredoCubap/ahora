@@ -39,8 +39,8 @@ export async function addItem(input: NewItem): Promise<void> {
   const item = newItemSchema.parse(input);
   const db = await getDb();
   await db.execute(
-    `INSERT INTO item (title, notes, fixed_time, due_time, priority, status, remind_before_min)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO item (title, notes, fixed_time, due_time, priority, status, remind_before_min, waiting_on, nag_interval_min)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item.title,
       item.notes ?? null,
@@ -49,6 +49,8 @@ export async function addItem(input: NewItem): Promise<void> {
       item.priority,
       item.status,
       item.remind_before_min ?? null,
+      item.waiting_on ?? null,
+      item.nag_interval_min ?? null,
     ]
   );
 }
@@ -72,6 +74,17 @@ export async function snoozeItem(id: number, minutes: number): Promise<void> {
   // (que da UTC) — ver el comentario de `toLocalIso` para el porqué.
   const snoozedUntil = toLocalIso(new Date(Date.now() + minutes * 60_000));
   await db.execute("UPDATE item SET snoozed_until = ? WHERE id = ?", [snoozedUntil, id]);
+}
+
+/** Registra que un ítem "en seguimiento" acaba de avisar: guarda la hora y
+ * el contador de hoy que ya calculó avisoEngine (ver ese archivo para el
+ * porqué de que esto se persista en vez de vivir solo en el log en memoria). */
+export async function recordSeguimientoNag(id: number, naggedTodayCount: number): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    "UPDATE item SET last_nagged_at = ?, nagged_today_count = ? WHERE id = ?",
+    [toLocalIso(new Date()), naggedTodayCount, id]
+  );
 }
 
 export async function deleteItem(id: number): Promise<void> {
