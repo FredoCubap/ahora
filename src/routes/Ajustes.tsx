@@ -1,8 +1,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
-import { disable as disableAutostart, enable as enableAutostart, isEnabled as isAutostartEnabled } from "@tauri-apps/plugin-autostart";
 import { useAppStore } from "../store/useAppStore";
 import { Header } from "../components/Header";
 import { useTheme, ThemeChoice } from "../hooks/useTheme";
+import { getAutostart, quitApp, setAutostart } from "../lib/system";
 
 const DAY_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
 
@@ -12,13 +12,18 @@ const DAY_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
  * solo si es un entero >= 1. Si el valor es inválido (vacío, 0, texto),
  * descarta el borrador y vuelve al último valor guardado — así nunca se
  * persiste un `overdue_retry_min: 0` que haría insistir el aviso sin parar.
+ *
+ * Para sincronizar el borrador con el valor guardado sin un efecto (un
+ * setState en un efecto dispara un render en cascada), el input se identifica
+ * por `key`: al cambiar `value`, React desmonta el input viejo y monta uno
+ * nuevo ya con el `value` correcto. Menos código que un useEffect, y hace
+ * exactamente lo mismo.
  */
 function useNumberField(value: number, commit: (n: number) => void) {
   const [draft, setDraft] = useState(String(value));
-
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
+  // "Rama" del valor guardado: si el guardado cambia mientras se está
+  // escribiendo, el input se rehace desde cero con el valor nuevo.
+  const [saved, setSaved] = useState(String(value));
 
   function onChange(e: ChangeEvent<HTMLInputElement>) {
     setDraft(e.target.value);
@@ -28,12 +33,13 @@ function useNumberField(value: number, commit: (n: number) => void) {
     const n = Number(draft);
     if (Number.isInteger(n) && n >= 1) {
       commit(n);
+      setSaved(String(n));
     } else {
-      setDraft(String(value));
+      setDraft(saved);
     }
   }
 
-  return { value: draft, onChange, onBlur };
+  return { key: saved, value: draft, onChange, onBlur };
 }
 
 const THEME_OPTIONS: { value: ThemeChoice; label: string }[] = [
@@ -50,18 +56,16 @@ export function Ajustes() {
   const archiveCompleted = useAppStore((s) => s.archiveCompleted);
   const { choice, setChoice } = useTheme();
 
-  const [autostart, setAutostart] = useState(false);
+  const [autostart, setAutostartState] = useState(false);
   useEffect(() => {
-    isAutostartEnabled().then(setAutostart);
+    void getAutostart().then(setAutostartState);
   }, []);
 
   async function toggleAutostart() {
-    if (autostart) {
-      await disableAutostart();
-    } else {
-      await enableAutostart();
-    }
-    setAutostart(await isAutostartEnabled());
+    // Lo que devuelve `set_autostart` es el estado *real* resultante, no lo que
+    // se pidió: si el registro no se pudo escribir, el toggle queda como
+    // estaba en vez de mentir diciendo que sí.
+    setAutostartState(await setAutostart(!autostart));
   }
 
   // Deben llamarse siempre, en el mismo orden, en cada render — por eso van
@@ -70,23 +74,23 @@ export function Ajustes() {
   // reemplaza solo en cuanto `settings` llega (el useEffect interno del hook
   // reacciona al cambio de `value`).
   const snoozeField = useNumberField(settings?.snooze_min ?? 10, (n) =>
-    updateSettings({ snooze_min: n })
+    updateSettings({ snooze_min: n }),
   );
   const retryMinField = useNumberField(settings?.overdue_retry_min ?? 30, (n) =>
-    updateSettings({ overdue_retry_min: n })
+    updateSettings({ overdue_retry_min: n }),
   );
   const retryMaxField = useNumberField(settings?.overdue_retry_max ?? 3, (n) =>
-    updateSettings({ overdue_retry_max: n })
+    updateSettings({ overdue_retry_max: n }),
   );
   // seguimiento_interval_min vive en minutos en la DB (default 240 = 4h),
   // pero para "cada cuánto insiste" un ítem en seguimiento tiene más sentido
   // pensarlo en horas — se muestra en horas y se convierte al guardar.
   const seguimientoIntervalField = useNumberField(
     Math.round((settings?.seguimiento_interval_min ?? 240) / 60),
-    (h) => updateSettings({ seguimiento_interval_min: h * 60 })
+    (h) => updateSettings({ seguimiento_interval_min: h * 60 }),
   );
   const seguimientoCapField = useNumberField(settings?.seguimiento_daily_cap ?? 3, (n) =>
-    updateSettings({ seguimiento_daily_cap: n })
+    updateSettings({ seguimiento_daily_cap: n }),
   );
 
   useEffect(() => {
@@ -112,7 +116,10 @@ export function Ajustes() {
       <Header title="Ajustes" />
 
       <div className="flex flex-col gap-2.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Horario laboral
         </div>
         <div
@@ -162,10 +169,16 @@ export function Ajustes() {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Insistencia
         </div>
-        <div className="flex flex-col rounded-2xl overflow-hidden" style={{ background: "var(--ahora-chip-bg)" }}>
+        <div
+          className="flex flex-col rounded-2xl overflow-hidden"
+          style={{ background: "var(--ahora-chip-bg)" }}
+        >
           <div
             className="flex items-center justify-between px-4 py-3.5"
             style={{ borderBottom: "1px solid var(--ahora-border)" }}
@@ -185,7 +198,10 @@ export function Ajustes() {
             <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
               Vencida reintenta cada
             </div>
-            <div className="flex items-center gap-1 text-sm" style={{ color: "var(--ahora-text-muted)" }}>
+            <div
+              className="flex items-center gap-1 text-sm"
+              style={{ color: "var(--ahora-text-muted)" }}
+            >
               <input
                 type="number"
                 min={1}
@@ -205,10 +221,16 @@ export function Ajustes() {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Seguimiento
         </div>
-        <div className="flex flex-col rounded-2xl overflow-hidden" style={{ background: "var(--ahora-chip-bg)" }}>
+        <div
+          className="flex flex-col rounded-2xl overflow-hidden"
+          style={{ background: "var(--ahora-chip-bg)" }}
+        >
           <div
             className="flex items-center justify-between px-4 py-3.5"
             style={{ borderBottom: "1px solid var(--ahora-border)" }}
@@ -216,7 +238,10 @@ export function Ajustes() {
             <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
               Insistir cada
             </div>
-            <div className="flex items-center gap-1 text-sm" style={{ color: "var(--ahora-text-muted)" }}>
+            <div
+              className="flex items-center gap-1 text-sm"
+              style={{ color: "var(--ahora-text-muted)" }}
+            >
               <input
                 type="number"
                 min={1}
@@ -242,7 +267,10 @@ export function Ajustes() {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Apariencia
         </div>
         <div className="flex rounded-xl p-1" style={{ background: "var(--ahora-chip-bg)" }}>
@@ -253,7 +281,11 @@ export function Ajustes() {
               className="flex-1 text-center py-2 rounded-[9px] text-[13px]"
               style={
                 choice === opt.value
-                  ? { background: "var(--ahora-bg-elevated)", fontWeight: 700, color: "var(--ahora-text)" }
+                  ? {
+                      background: "var(--ahora-bg-elevated)",
+                      fontWeight: 700,
+                      color: "var(--ahora-text)",
+                    }
                   : { color: "var(--ahora-text-muted)" }
               }
             >
@@ -281,7 +313,10 @@ export function Ajustes() {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Sistema
         </div>
         <button
@@ -291,8 +326,7 @@ export function Ajustes() {
         >
           <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
             Iniciar con el sistema
-          </div>
-          <div
+          </div>          <div
             className="rounded-full flex-shrink-0 flex"
             style={{
               width: 34,
@@ -303,13 +337,31 @@ export function Ajustes() {
               transition: "background 0.15s",
             }}
           >
-            <div className="rounded-full" style={{ width: 16, height: 16, background: "var(--ahora-bg-elevated)" }} />
+            <div
+              className="rounded-full"
+              style={{ width: 16, height: 16, background: "var(--ahora-bg-elevated)" }}
+            />
+          </div>
+        </button>
+        <button
+          onClick={() => void quitApp()}
+          className="flex items-center justify-between rounded-2xl px-4 py-3.5"
+          style={{ background: "var(--ahora-chip-bg)" }}
+        >
+          <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
+            Salir de Ahora
+          </div>
+          <div className="text-xs" style={{ color: "var(--ahora-text-faint)" }}>
+            la X solo la esconde
           </div>
         </button>
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Datos
         </div>
         <button

@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { getApi } from "./pywebviewApi";
 import { Item, Occurrence, RecurrenceRule } from "./types";
 
 /** "YYYY-MM-DD" en horario local (no `toISOString`, que usa UTC y puede
@@ -14,16 +14,17 @@ export function addDays(d: Date, days: number): Date {
   return copy;
 }
 
-/** Le pide al backend Rust las fechas en las que cae cada regla dentro de
+/** Le pide al shell Python las fechas en las que cae cada regla dentro de
  * `[from, to]` (ambas "YYYY-MM-DD"). El cálculo en sí vive en
- * `expand_recurrences` (src-tauri/src/lib.rs) — acá solo lo invocamos. */
+ * `expand_recurrences` (shell/recurrence.py) — acá solo lo invocamos. */
 export async function expandRecurrences(
   rules: RecurrenceRule[],
   from: string,
-  to: string
+  to: string,
 ): Promise<Occurrence[]> {
   if (rules.length === 0) return [];
-  return await invoke<Occurrence[]>("expand_recurrences", { rules, from, to });
+  const api = await getApi();
+  return await api.expand_recurrences(rules, from, to);
 }
 
 /**
@@ -39,12 +40,12 @@ export async function expandRecurrences(
 export function mergeOccurrences(
   items: Item[],
   rules: RecurrenceRule[],
-  occurrences: Occurrence[]
+  occurrences: Occurrence[],
 ): Item[] {
   const exceptionKeys = new Set(
     items
       .filter((i) => i.rule_id != null && i.occurrence_date != null)
-      .map((i) => `${i.rule_id}:${i.occurrence_date}`)
+      .map((i) => `${i.rule_id}:${i.occurrence_date}`),
   );
   const rulesById = new Map(rules.map((r) => [r.id, r]));
 

@@ -13,8 +13,16 @@ interface CapturaModalProps {
 const PRIORITIES: Priority[] = ["baja", "media", "alta"];
 const PRIORITY_LABEL: Record<Priority, string> = { baja: "Baja", media: "Media", alta: "Alta" };
 
-const FREQ_LABEL: Record<Freq, string> = { diaria: "Diaria", semanal: "Semanal", mensual: "Mensual" };
-const UNIT_LABEL: Record<Freq, string> = { diaria: "día(s)", semanal: "semana(s)", mensual: "mes(es)" };
+const FREQ_LABEL: Record<Freq, string> = {
+  diaria: "Diaria",
+  semanal: "Semanal",
+  mensual: "Mensual",
+};
+const UNIT_LABEL: Record<Freq, string> = {
+  diaria: "día(s)",
+  semanal: "semana(s)",
+  mensual: "mes(es)",
+};
 const DAY_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
 
 const activeChip = {
@@ -23,7 +31,10 @@ const activeChip = {
   fontWeight: 600,
   color: "var(--ahora-text)",
 };
-const inactiveChip = { border: "1.5px solid var(--ahora-border)", color: "var(--ahora-text-muted)" };
+const inactiveChip = {
+  border: "1.5px solid var(--ahora-border)",
+  color: "var(--ahora-text-muted)",
+};
 
 const fieldStyle = {
   background: "var(--ahora-bg-elevated)",
@@ -44,7 +55,7 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
 
   // Repetir: si está activo, el ítem no se crea directo — se crea una
   // `recurrence_rule` y las fechas puntuales se calculan solas (ver
-  // src-tauri/src/lib.rs `expand_recurrences`).
+  // `expandRecurrences` en src/lib/recurrence.ts).
   const [repeat, setRepeat] = useState(false);
 
   // "En seguimiento" (docs/FILOSOFIA.md): sin fixed_time/due_time, con
@@ -181,13 +192,19 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
         style={{ background: "var(--ahora-bg)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="font-display font-extrabold text-[18px]" style={{ color: "var(--ahora-text)" }}>
+        <div
+          className="font-display font-extrabold text-[18px]"
+          style={{ color: "var(--ahora-text)" }}
+        >
           Nuevo ítem
         </div>
 
         <div
           className="flex flex-col gap-2 rounded-2xl p-4"
-          style={{ background: "var(--ahora-bg-elevated)", border: "1.5px solid var(--ahora-border)" }}
+          style={{
+            background: "var(--ahora-bg-elevated)",
+            border: "1.5px solid var(--ahora-border)",
+          }}
         >
           <input
             autoFocus
@@ -223,7 +240,10 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
                 transition: "background 0.15s",
               }}
             >
-              <div className="rounded-full" style={{ width: 14, height: 14, background: "var(--ahora-bg)" }} />
+              <div
+                className="rounded-full"
+                style={{ width: 14, height: 14, background: "var(--ahora-bg)" }}
+              />
             </div>
             <div
               className="text-xs font-semibold"
@@ -245,11 +265,16 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
                 transition: "background 0.15s",
               }}
             >
-              <div className="rounded-full" style={{ width: 14, height: 14, background: "var(--ahora-bg)" }} />
+              <div
+                className="rounded-full"
+                style={{ width: 14, height: 14, background: "var(--ahora-bg)" }}
+              />
             </div>
             <div
               className="text-xs font-semibold"
-              style={{ color: seguimiento ? "var(--ahora-seguimiento)" : "var(--ahora-text-faint)" }}
+              style={{
+                color: seguimiento ? "var(--ahora-seguimiento)" : "var(--ahora-text-faint)",
+              }}
             >
               En seguimiento
             </div>
@@ -259,9 +284,14 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
         {seguimiento && (
           <div
             className="flex flex-col gap-2 rounded-2xl p-4"
-            style={{ background: `color-mix(in oklch, var(--ahora-seguimiento) 9%, var(--ahora-chip-bg))` }}
+            style={{
+              background: `color-mix(in oklch, var(--ahora-seguimiento) 9%, var(--ahora-chip-bg))`,
+            }}
           >
-            <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-seguimiento)" }}>
+            <div
+              className="text-[11px] font-bold uppercase tracking-wide"
+              style={{ color: "var(--ahora-seguimiento)" }}
+            >
               Esperando a
             </div>
             <input
@@ -278,9 +308,15 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
         )}
 
         {repeat && (
-          <div className="flex flex-col gap-3.5 rounded-2xl p-4" style={{ background: "var(--ahora-chip-bg)" }}>
+          <div
+            className="flex flex-col gap-3.5 rounded-2xl p-4"
+            style={{ background: "var(--ahora-chip-bg)" }}
+          >
             <div className="flex flex-col gap-1.5">
-              <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+              <div
+                className="text-[11px] font-bold uppercase tracking-wide"
+                style={{ color: "var(--ahora-text-faint)" }}
+              >
                 Frecuencia
               </div>
               <div className="flex gap-2">
@@ -316,7 +352,10 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
 
             {freq === "semanal" && (
               <div className="flex flex-col gap-1.5">
-                <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+                <div
+                  className="text-[11px] font-bold uppercase tracking-wide"
+                  style={{ color: "var(--ahora-text-faint)" }}
+                >
                   Días
                 </div>
                 <div className="flex gap-1.5">
@@ -351,7 +390,9 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
                   min={1}
                   max={31}
                   value={monthDay}
-                  onChange={(e) => setMonthDay(Math.min(31, Math.max(1, Number(e.target.value) || 1)))}
+                  onChange={(e) =>
+                    setMonthDay(Math.min(31, Math.max(1, Number(e.target.value) || 1)))
+                  }
                   className="w-14 text-right text-sm bg-transparent outline-none rounded-lg px-2 py-1"
                   style={fieldStyle}
                 />
@@ -401,7 +442,10 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+              <div
+                className="text-[11px] font-bold uppercase tracking-wide"
+                style={{ color: "var(--ahora-text-faint)" }}
+              >
                 Tipo
               </div>
               <div className="flex gap-2">
@@ -428,7 +472,10 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
           <ChevronDown
             size={14}
             color="var(--ahora-text-faint)"
-            style={{ transform: detailsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+            style={{
+              transform: detailsOpen ? "rotate(180deg)" : "none",
+              transition: "transform 0.15s",
+            }}
           />
           <div className="text-xs" style={{ color: "var(--ahora-text-faint)" }}>
             notas, prioridad, recordatorio (opcional)
@@ -436,7 +483,10 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
         </button>
 
         {detailsOpen && (
-          <div className="flex flex-col gap-3.5 rounded-2xl p-4" style={{ background: "var(--ahora-chip-bg)" }}>
+          <div
+            className="flex flex-col gap-3.5 rounded-2xl p-4"
+            style={{ background: "var(--ahora-chip-bg)" }}
+          >
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -447,7 +497,10 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
             />
 
             <div className="flex flex-col gap-1.5">
-              <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+              <div
+                className="text-[11px] font-bold uppercase tracking-wide"
+                style={{ color: "var(--ahora-text-faint)" }}
+              >
                 Prioridad
               </div>
               <div className="flex gap-2">
@@ -465,28 +518,36 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
             </div>
 
             {!seguimiento && (
-            <div className="flex flex-col gap-1.5">
-              <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
-                Recordatorio
-              </div>
-              <div
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
-                style={{ background: "var(--ahora-bg-elevated)", border: "1.5px solid var(--ahora-border)" }}
-              >
-                <Clock size={14} color="var(--ahora-text-muted)" />
-                <select
-                  value={remindBefore ?? ""}
-                  onChange={(e) => setRemindBefore(e.target.value ? Number(e.target.value) : null)}
-                  className="text-[13px] bg-transparent outline-none"
-                  style={{ color: "var(--ahora-text)" }}
+              <div className="flex flex-col gap-1.5">
+                <div
+                  className="text-[11px] font-bold uppercase tracking-wide"
+                  style={{ color: "var(--ahora-text-faint)" }}
                 >
-                  <option value="">Sin recordatorio</option>
-                  <option value="5">5 minutos antes</option>
-                  <option value="10">10 minutos antes</option>
-                  <option value="30">30 minutos antes</option>
-                </select>
+                  Recordatorio
+                </div>
+                <div
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                  style={{
+                    background: "var(--ahora-bg-elevated)",
+                    border: "1.5px solid var(--ahora-border)",
+                  }}
+                >
+                  <Clock size={14} color="var(--ahora-text-muted)" />
+                  <select
+                    value={remindBefore ?? ""}
+                    onChange={(e) =>
+                      setRemindBefore(e.target.value ? Number(e.target.value) : null)
+                    }
+                    className="text-[13px] bg-transparent outline-none"
+                    style={{ color: "var(--ahora-text)" }}
+                  >
+                    <option value="">Sin recordatorio</option>
+                    <option value="5">5 minutos antes</option>
+                    <option value="10">10 minutos antes</option>
+                    <option value="30">30 minutos antes</option>
+                  </select>
+                </div>
               </div>
-            </div>
             )}
           </div>
         )}

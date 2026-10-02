@@ -34,14 +34,12 @@ export function computeActiveAviso(
   items: Item[],
   settings: Settings,
   now: Date,
-  log: NotifiedLog
+  log: NotifiedLog,
 ): Item | null {
   if (!isWorkTime(now, settings)) return null;
   const nowMs = now.getTime();
 
-  const candidates = items.filter(
-    (i) => i.status === "pendiente" || i.status === "en_progreso"
-  );
+  const candidates = items.filter((i) => i.status === "pendiente" || i.status === "en_progreso");
 
   for (const item of candidates) {
     // Un ítem virtual (ocurrencia de una recurrencia sin materializar
@@ -109,7 +107,13 @@ export function computeActiveAviso(
     if (!relevantTime) continue;
     const targetMs = new Date(relevantTime).getTime();
 
-    if (item.remind_before_min != null) {
+    // "Empezada" (en_progreso): back off parcial. El usuario ya está encima, así
+    // que no le avisamos antes (cortesía) ni al filo — pero si se vence, sí le
+    // avisamos, porque ahí ya lo dejó pasar. Sin este flag, un ítem empezado se
+    // comportaría igual que uno pendiente y seguiría sonando al pedo.
+    const started = item.status === "en_progreso";
+
+    if (!started && item.remind_before_min != null) {
       const courtesyMs = targetMs - item.remind_before_min * 60_000;
       const key = `cortesia:${key0}`;
       if (nowMs >= courtesyMs && nowMs < targetMs && !log.has(key)) {
@@ -120,7 +124,7 @@ export function computeActiveAviso(
 
     // Ventana de 1 min de tolerancia para no perder el tick exacto.
     const ontimeKey = `al_filo:${key0}`;
-    if (nowMs >= targetMs && nowMs < targetMs + 60_000 && !log.has(ontimeKey)) {
+    if (!started && nowMs >= targetMs && nowMs < targetMs + 60_000 && !log.has(ontimeKey)) {
       log.set(ontimeKey, { count: 1, lastFiredAt: nowMs });
       return item;
     }

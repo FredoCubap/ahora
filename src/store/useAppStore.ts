@@ -16,6 +16,8 @@ interface AppState {
   addRecurrenceRule: (input: NewRecurrenceRule) => Promise<void>;
   completeItem: (item: Item) => Promise<void>;
   skipItem: (item: Item) => Promise<void>;
+  startItem: (item: Item) => Promise<void>;
+  unstartItem: (item: Item) => Promise<void>;
   snoozeItem: (item: Item, minutes: number) => Promise<void>;
   recordSeguimientoNag: (item: Item) => Promise<void>;
   deleteItem: (item: Item) => Promise<void>;
@@ -34,7 +36,8 @@ async function resolveId(item: Item, rules: RecurrenceRule[]): Promise<number> {
 
   if (item.rule_id != null && item.occurrence_date != null) {
     const rule = rules.find((r) => r.id === item.rule_id);
-    if (!rule) throw new Error(`no se encontró la regla ${item.rule_id} para materializar la ocurrencia`);
+    if (!rule)
+      throw new Error(`no se encontró la regla ${item.rule_id} para materializar la ocurrencia`);
     return await db.materializeOccurrence(rule, item.occurrence_date);
   }
 
@@ -51,6 +54,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     const today = new Date();
     const from = toDateStr(today);
     const to = toDateStr(addDays(today, LOOKAHEAD_DAYS));
+
+    // Antes de leer, archiva las citas que ya pasaron (docs/FILOSOFIA.md,
+    // "Estados"). Va antes y no en paralelo con la lectura a propósito: si
+    // corrieran juntos, `listItems` podría devolver una cita que todavía da
+    // `pendiente` y que en el mismo refresh ya está archivada.
+    //
+    // El efecto en pantalla es nulo — `zonifyToday` esconde las citas pasadas
+    // por la hora, no por el estado — así que el `.catch` no esconde nada
+    // importante: si el shell no responde, la lectura sigue igual de válida.
+    //
+    // Va en `refresh` y no solo al arrancar porque la app vive en bandeja
+    // días: con solo el arranque, una cita de ayer seguiría pendiente hasta
+    // el día siguiente.
+    await db.autoArchiveMissedCitas().catch(() => 0);
 
     const [items, settings, rules] = await Promise.all([
       db.listItems(),
@@ -82,6 +99,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   skipItem: async (item) => {
     const id = await resolveId(item, get().rules);
     await db.skipItem(id);
+    await get().refresh();
+  },
+
+  startItem: async (item) => {
+    const id = await resolveId(item, get().rules);
+    await db.startItem(id);
+    await get().refresh();
+  },
+
+  unstartItem: async (item) => {
+    const id = await resolveId(item, get().rules);
+    await db.unstartItem(id);
     await get().refresh();
   },
 

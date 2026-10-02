@@ -22,16 +22,19 @@ Los datos viven en SQLite local en la máquina del usuario.
 ## Principios
 
 ### 1. La app tiene voz activa, y por eso tiene que acertar
+
 Interrumpir es un privilegio caro. Una app que avisa de algo irrelevante o a
 destiempo se silencia en tres días y no vuelve. **Mejor avisar de menos y bien.**
 Ante la duda, no sonar.
 
 ### 2. El "ahora" es el centro de gravedad
-La pantalla principal responde a una sola pregunta: *¿qué toca en las próximas
-horas?* No es una parrilla de tarjetas. En un día normal no debería tener scroll.
+
+La pantalla principal responde a una sola pregunta: _¿qué toca en las próximas
+horas?_ No es una parrilla de tarjetas. En un día normal no debería tener scroll.
 La semana, el mes y el backlog están a un clic, nunca en primer plano.
 
 ### 3. Cada aviso se responde en dos segundos
+
 Todo aviso ofrece siempre las mismas tres acciones:
 
 `Hecho` · `Pospón 10 min` · `Hoy no`
@@ -40,6 +43,7 @@ Si un aviso aparece y el usuario no puede actuar de inmediato, la fricción mata
 el hábito.
 
 ### 4. La insistencia tiene techo
+
 Los avisos escalan y luego se rinden con dignidad:
 
 - **Cortesía:** una vez, X minutos antes (configurable por ítem).
@@ -51,19 +55,23 @@ Los avisos escalan y luego se rinden con dignidad:
 El reintento infinito es exactamente lo que hace que la gente mate la app.
 
 ### 5. El pasado no perdonado no es carga
+
 Las tareas recurrentes **no se acumulan**. Si ayer no revisaste el correo, hoy no
 tienes dos "revisar correo": tienes el de hoy y punto. La culpa acumulada es
 ansiedad, no productividad.
 
 ### 6. Crear algo cuesta segundos, no un formulario
+
 El objetivo es escribir una línea ("Llamar a Juan mañana 15:00") y que la app
 haga el resto. El modal completo existe para el caso raro, no para el común.
 
 ### 7. Una sola entidad
+
 No hay "tipo evento" vs "tipo tarea" que el usuario elija. Hay un ítem, y su
 comportamiento sale de qué campos de tiempo tiene llenos (ver esquema).
 
 ### 8. Seguimiento no es urgencia
+
 Hay pendientes que no dependen solo de ti — esperas a que un tercero responda o
 resuelva (Google, un proveedor, un compañero) — y lo que necesitas no es una
 fecha límite, es **no perder el hilo**. Eso es un tono distinto al de "vencida":
@@ -73,10 +81,10 @@ más espaciado, sin rojo, sin alarma. Ver [Ítems en seguimiento](#ítems-en-seg
 
 Un ítem puede tener uno de estos dos campos, los dos, o —raro— ninguno:
 
-| Campo         | Significado                          | Si pasa la hora                         |
-|---------------|--------------------------------------|----------------------------------------|
-| `fixed_time`  | Ocurre a esta hora (una cita)        | A los N min se archiva solo            |
-| `due_time`    | Hay que terminar antes de esta hora  | Sube a "vencida", se queda molestando  |
+| Campo        | Significado                         | Si pasa la hora                       |
+| ------------ | ----------------------------------- | ------------------------------------- |
+| `fixed_time` | Ocurre a esta hora (una cita)       | A los N min se archiva solo           |
+| `due_time`   | Hay que terminar antes de esta hora | Sube a "vencida", se queda molestando |
 
 - Solo `fixed_time` → se comporta como cita.
 - Solo `due_time` → se comporta como tarea con fecha límite.
@@ -90,7 +98,7 @@ Un ítem puede tener uno de estos dos campos, los dos, o —raro— ninguno:
 - `recurrence_rule` guarda el patrón (qué, cada cuánto, a qué hora, hasta cuándo).
 - La app calcula al vuelo la ocurrencia de hoy/mañana. No materializa filas.
 - Se crea una fila en `item` **solo** cuando el usuario toca esa ocurrencia:
-  la completa, la salta ("Hoy no") o la mueve. Esa fila es una *excepción*.
+  la completa, la salta ("Hoy no") o la mueve. Esa fila es una _excepción_.
 - El histórico de cumplimiento se lee de las excepciones. Es justo lo que
   queremos medir.
 
@@ -221,7 +229,11 @@ CREATE TABLE settings (
 - `en_progreso` — el usuario la marcó como empezada.
 - `hecha` — completada. `completed_at` se rellena.
 - `saltada` — "Hoy no" sobre una recurrente. Cuenta como excepción en el histórico.
-- `archivada` — cita cuya hora pasó hace más de N minutos sin due. Fuera de la vista.
+- `archivada` - **fuera de juego**: ya no se muestra ni se avisa. Dos maneras de
+  llegar acá: (a) una cita cuya hora pasó hace más de N minutos sin `due_time` —
+  se archiva sola (`db.auto_archive_missed_citas`), y `N` son 60 min; (b) el
+  "Vaciar completadas" de Ajustes, que manda `hecha` y `saltada`. No se borra
+  nunca: queda en la tabla por si algún día se quiere ver el historial.
 
 ### El motor de avisos (lógica, no tabla)
 
@@ -258,18 +270,31 @@ Mañana, la semana y el backlog viven en otra ruta.
 
 ## Estado actual vs esta filosofía
 
-La migración de `tasks` a `item` / `recurrence_rule` / `settings` ya se hizo
-(ver `src-tauri/src/lib.rs`), junto con el cálculo de ocurrencias de reglas
-recurrentes y un motor de avisos en el frontend. Detalles de implementación y
-gaps pendientes se llevan en el chat de backend, no aquí.
+Casi todo lo de arriba está implementado. El esquema `item` /
+`recurrence_rule` / `settings` vive en `shell/db.py`, el cálculo de
+ocurrencias en `shell/recurrence.py` y el motor de avisos en
+`src/lib/avisoEngine.ts`.
 
-Pendiente de aterrizar de este documento, lo más reciente primero:
+Lo que este documento define y el código todavía no hace:
 
-- `waiting_on`, `nag_interval_min`, `last_nagged_at`, `nagged_today_count` en
-  `item`, y `seguimiento_interval_min` / `seguimiento_daily_cap` en `settings`
-  — nada de esto existe todavía en el esquema real.
-- La zona "En seguimiento" de la vista principal, colapsada y neutra.
+- `status = 'en_progreso'` está en el enum y en los schemas, pero nada lo
+  escribe: no hay forma de marcar una tarea como empezada. La razón por la que
+  se pidió ("el usuario la marcó como empezada") sigue sin construirse.
 
-Estas son tareas de implementación, no de filosofía. Se abordan cuando toque
-(el schema/motor en el chat de backend; la zona visual, aquí).
-```
+### Una nota sobre "Pospón"
+
+`Pospón 10 min` solo escribe `snoozed_until` y nada más: no mueve el ítem de
+zona ni le cambia la hora. No hay zona "pospuestos" ni indicador en la fila, y
+no está previsto que los haya — mientras el pospón dure, el ítem sigue donde
+estaba y el aviso simplemente calla, y vuelve a sonar solo cuando expira
+(`avisoEngine.ts`).
+
+Que una cita que ya pasó salga de la vista principal **no** es lo mismo que
+posponerla, y no es un efecto del pospón: es la regla de "una cita que ya pasó
+no compite visualmente con lo urgente". Lo que el pospón hace esAggravar la
+falta de rastro — te promete un regreso que ninguna lista registra — pero la
+desaparición es previa e independiente.
+
+Cuando esto cambie, el detalle de implementación va en el README; este
+documento sigue siendo sobre el _qué_ y el _por qué_, no sobre el _cómo_.
+

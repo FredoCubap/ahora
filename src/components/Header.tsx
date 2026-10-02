@@ -20,7 +20,10 @@ export function Header({ title, subtitle }: HeaderProps) {
         <ChevronLeft size={15} color="var(--ahora-text-muted)" strokeWidth={2.2} />
       </button>
       <div className="flex flex-col gap-0.5">
-        <h1 className="font-display font-extrabold text-[22px]" style={{ color: "var(--ahora-text)" }}>
+        <h1
+          className="font-display font-extrabold text-[22px]"
+          style={{ color: "var(--ahora-text)" }}
+        >
           {title}
         </h1>
         {subtitle && (

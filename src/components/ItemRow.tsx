@@ -15,8 +15,10 @@ interface ItemRowProps {
 }
 
 function priorityDot(priority: Item["priority"]): { size: string; bg: string; border: string } {
-  if (priority === "alta") return { size: "9px", bg: "var(--ahora-accent)", border: "var(--ahora-accent)" };
-  if (priority === "media") return { size: "9px", bg: "transparent", border: "var(--ahora-accent)" };
+  if (priority === "alta")
+    return { size: "9px", bg: "var(--ahora-accent)", border: "var(--ahora-accent)" };
+  if (priority === "media")
+    return { size: "9px", bg: "transparent", border: "var(--ahora-accent)" };
   return { size: "7px", bg: "var(--ahora-text-faint)", border: "var(--ahora-text-faint)" };
 }
 
@@ -28,21 +30,41 @@ export function ItemRow({ item, variant, onComplete }: ItemRowProps) {
     onComplete(item);
   }
 
+  // "Empezada" (en_progreso): el usuario ya está encima. Se distingue con un
+  // punto de acento al lado del checkbox — no grita como una vencida, pero se
+  // ve de un vistazo. El checkbox sigue siendo el de "hecho": empezada no es
+  // un estado terminal, se sigue pudiendo completar.
+  const started = item.status === "en_progreso";
+
   const checkbox = (color: string, size: number) => (
-    <button
-      onClick={handleComplete}
-      aria-label="Marcar como hecho"
-      className="flex-shrink-0"
-      style={{ width: size + 12, height: size + 12, display: "flex", alignItems: "center", justifyContent: "center" }}
-    >
-      <MorphIcon
-        icon={justCompleted ? CheckCircle2 : Circle}
-        size={size}
-        strokeWidth={1.5}
-        color={color}
-        spring="snappy"
-      />
-    </button>
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      {started && (
+        <div
+          title="Empezada"
+          className="rounded-full"
+          style={{ width: 5, height: 5, background: "var(--ahora-accent)" }}
+        />
+      )}
+      <button
+        onClick={handleComplete}
+        aria-label="Marcar como hecho"
+        style={{
+          width: size + 12,
+          height: size + 12,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <MorphIcon
+          icon={justCompleted ? CheckCircle2 : Circle}
+          size={size}
+          strokeWidth={1.5}
+          color={color}
+          spring="snappy"
+        />
+      </button>
+    </div>
   );
 
   if (variant === "vencida") {
@@ -79,7 +101,10 @@ export function ItemRow({ item, variant, onComplete }: ItemRowProps) {
         style={{ borderBottom: "1px solid var(--ahora-border)" }}
       >
         <div className="flex flex-col items-start w-14 flex-shrink-0">
-          <div className="font-display font-extrabold text-[19px]" style={{ color: "var(--ahora-text)" }}>
+          <div
+            className="font-display font-extrabold text-[19px]"
+            style={{ color: "var(--ahora-text)" }}
+          >
             {time ? formatHM(time) : "—"}
           </div>
           <div
@@ -91,7 +116,12 @@ export function ItemRow({ item, variant, onComplete }: ItemRowProps) {
         </div>
         <div
           className="flex-shrink-0 rounded-full"
-          style={{ width: dot.size, height: dot.size, background: dot.bg, border: `1.5px solid ${dot.border}` }}
+          style={{
+            width: dot.size,
+            height: dot.size,
+            background: dot.bg,
+            border: `1.5px solid ${dot.border}`,
+          }}
         />
         <div className="flex flex-1 min-w-0 flex-col gap-0.5">
           <div className="font-bold text-[16px]" style={{ color: "var(--ahora-text)" }}>

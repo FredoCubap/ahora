@@ -1,0 +1,14 @@
+# Shell de escritorio de Ahora.
+#
+# pywebview es lo único realmente necesario: usa el WebView2 que ya viene con
+# Windows, así que no hay Chromium embebido ni motor propio que mantener.
+#
+# Instalación:  python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
+
+# La ventana. En Windows usa WebView2 (Edge), que ya está en el sistema.
+pywebview==6.2.1
+
+# Ícono de bandeja y notificaciones del sistema operativo.
+pystray==0.19.5
+# pystray necesita Pillow para leer assets/icon.ico.
+Pillow==12.3.0

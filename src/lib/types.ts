@@ -68,8 +68,8 @@ export const FREQS = ["diaria", "semanal", "mensual"] as const;
 export type Freq = (typeof FREQS)[number];
 
 // Fila cruda de la tabla `recurrence_rule`. `is_due`/`active` son INTEGER en
-// SQLite (0/1) — por eso van como number, no boolean, tanto acá como en el
-// struct de Rust que recibe estas mismas filas.
+// SQLite (0/1) — por eso van como number y no como boolean: es lo que
+// devuelve la DB y lo que espera `shell/recurrence.py`.
 export const recurrenceRuleSchema = z.object({
   id: z.number(),
   title: z.string().min(1),
@@ -93,7 +93,7 @@ export type RecurrenceRule = z.infer<typeof recurrenceRuleSchema>;
 export const newRecurrenceRuleSchema = recurrenceRuleSchema.omit({ id: true, created_at: true });
 export type NewRecurrenceRule = z.infer<typeof newRecurrenceRuleSchema>;
 
-/** Una fecha calculada por el comando Rust `expand_recurrences`. */
+/** Una fecha calculada por `expand_recurrences` (shell/recurrence.py). */
 export interface Occurrence {
   rule_id: number;
   date: string;

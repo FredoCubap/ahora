@@ -18,7 +18,11 @@ function startOfWeek(now: Date): Date {
 }
 
 function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function summarizeDay(items: Item[], day: Date): string {
@@ -63,9 +67,12 @@ export function Semana() {
     return { letter, date: d, isToday: isSameDay(d, now) };
   });
 
-  const rangeLabel = `${monday.getDate()} – ${days[6].date.getDate()} de ${new Intl.DateTimeFormat("es-ES", {
-    month: "long",
-  }).format(monday)}`;
+  const rangeLabel = `${monday.getDate()} – ${days[6].date.getDate()} de ${new Intl.DateTimeFormat(
+    "es-ES",
+    {
+      month: "long",
+    },
+  ).format(monday)}`;
 
   const todayZones = zonifyToday(items, now);
   const todayItems = [...todayZones.vencidas, ...todayZones.destacado, ...todayZones.resto];
@@ -90,7 +97,10 @@ export function Semana() {
       <div className="flex justify-between">
         {days.map((d) => (
           <div key={d.letter + d.date.toISOString()} className="flex flex-col items-center gap-1.5">
-            <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--ahora-text-faint)" }}>
+            <div
+              className="text-[10px] font-bold uppercase tracking-wide"
+              style={{ color: "var(--ahora-text-faint)" }}
+            >
               {d.letter}
             </div>
             <div
@@ -109,7 +119,10 @@ export function Semana() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide mb-0.5"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Hoy
         </div>
         {todayItems.length === 0 && (
@@ -123,12 +136,18 @@ export function Semana() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide mb-0.5"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Próximos días
         </div>
         {upcoming.map((d) => (
           <div key={d.nombre} className="flex items-center gap-2.5 py-2">
-            <div className="flex-1 min-w-0 text-[13px] font-semibold capitalize" style={{ color: "var(--ahora-text)" }}>
+            <div
+              className="flex-1 min-w-0 text-[13px] font-semibold capitalize"
+              style={{ color: "var(--ahora-text)" }}
+            >
               {d.nombre}
             </div>
             <div className="text-xs" style={{ color: "var(--ahora-text-muted)" }}>
@@ -139,7 +158,10 @@ export function Semana() {
       </div>
 
       <div id="backlog" className="flex flex-col gap-0.5">
-        <div className="text-[11px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--ahora-text-faint)" }}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wide mb-0.5"
+          style={{ color: "var(--ahora-text-faint)" }}
+        >
           Backlog · algún día
         </div>
         {backlog.length === 0 && (

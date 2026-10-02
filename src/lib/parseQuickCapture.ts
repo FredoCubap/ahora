@@ -23,11 +23,14 @@ function pad2(n: number): string {
 
 function toLocalIso(date: Date): string {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(
-    date.getHours()
+    date.getHours(),
   )}:${pad2(date.getMinutes())}:00`;
 }
 
-function findDate(text: string, now: Date): { date: Date | null; match: string | null; label: string } {
+function findDate(
+  text: string,
+  now: Date,
+): { date: Date | null; match: string | null; label: string } {
   const manana = text.match(/\bmañana\b/i);
   if (manana) {
     const d = new Date(now);
@@ -51,7 +54,9 @@ function findDate(text: string, now: Date): { date: Date | null; match: string |
   return { date: null, match: null, label: "" };
 }
 
-function findTime(text: string): { hours: number; minutes: number; match: string; label: string } | null {
+function findTime(
+  text: string,
+): { hours: number; minutes: number; match: string; label: string } | null {
   let m = text.match(/\b(\d{1,2}):(\d{2})\b/);
   if (m) {
     const hours = parseInt(m[1], 10);
@@ -117,7 +122,5 @@ export function parseQuickCapture(rawText: string, now: Date = new Date()): Pars
   const dayLabel = dateResult.label || "hoy";
   const label = `${kind} · ${dayLabel} · ${timeResult.label}`;
 
-  return isDue
-    ? { title, due_time: iso, label }
-    : { title, fixed_time: iso, label };
+  return isDue ? { title, due_time: iso, label } : { title, fixed_time: iso, label };
 }

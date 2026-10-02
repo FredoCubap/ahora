@@ -50,7 +50,7 @@ export function backlogItems(items: Item[]): Item[] {
       (i.status === "pendiente" || i.status === "en_progreso") &&
       !i.fixed_time &&
       !i.due_time &&
-      !i.waiting_on
+      !i.waiting_on,
   );
 }
 
@@ -62,7 +62,7 @@ export function seguimientoItems(items: Item[]): Item[] {
       (i.status === "pendiente" || i.status === "en_progreso") &&
       !i.fixed_time &&
       !i.due_time &&
-      !!i.waiting_on
+      !!i.waiting_on,
   );
 }
 

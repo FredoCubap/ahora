@@ -20,7 +20,14 @@ export function ItemActions({ item }: ItemActionsProps) {
   const skipItem = useAppStore((s) => s.skipItem);
   const snoozeItem = useAppStore((s) => s.snoozeItem);
   const deleteItem = useAppStore((s) => s.deleteItem);
+  const startItem = useAppStore((s) => s.startItem);
+  const unstartItem = useAppStore((s) => s.unstartItem);
   const snoozeMinutes = useAppStore((s) => s.settings?.snooze_min ?? 10);
+
+  // "Empezada" es un toggle: si ya está en_progreso, el menú ofrece volverla a
+  // pendiente. Con back off parcial, un misclick dejaría un ítem sin avisos de
+  // cortesía — esto es la red de seguridad.
+  const started = item.status === "en_progreso";
 
   // Un ítem de recurrencia (virtual o ya materializado) no se puede borrar
   // sin resucitarlo — ver el comentario en useAppStore.deleteItem.
@@ -65,10 +72,27 @@ export function ItemActions({ item }: ItemActionsProps) {
             boxShadow: "0 8px 20px -6px rgba(0,0,0,0.25)",
           }}
         >
+          {started ? (
+            <button
+              onClick={() => run(() => unstartItem(item))}
+              className="text-left text-[13px] px-3.5 py-2.5"
+              style={{ color: "var(--ahora-text)" }}
+            >
+              Volver a pendiente
+            </button>
+          ) : (
+            <button
+              onClick={() => run(() => startItem(item))}
+              className="text-left text-[13px] px-3.5 py-2.5"
+              style={{ color: "var(--ahora-text)" }}
+            >
+              Empezar
+            </button>
+          )}
           <button
             onClick={() => run(() => skipItem(item))}
             className="text-left text-[13px] px-3.5 py-2.5"
-            style={{ color: "var(--ahora-text)" }}
+            style={{ color: "var(--ahora-text)", borderTop: "1px solid var(--ahora-border)" }}
           >
             Saltar
           </button>

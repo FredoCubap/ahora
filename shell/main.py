@@ -1,0 +1,296 @@
+"""Shell de escritorio de Ahora: la ventana, la bandeja y el puente a SQLite.
+
+Es el punto de entrada de la app. Tres cosas que hace:
+
+1. **Elige qué servir.** Si existe un build de Vite (`dist/`, con `index.html`),
+   lo sirve desde ahí — es la app real. Si no existe, cae al dev server de Vite
+   en el puerto 1420, para poder desarrollar sin compilar antes.
+
+2. **La ventana vive en bandeja.** La X no cierra el proceso: la esconde, y la
+   app sigue corriendo con el motor de avisos. Lo único que termina de verdad
+   es "Salir": el del menú de bandeja, o el botón homónimo de Ajustes — los dos
+   llaman a `Api.quit()`.
+
+3. **Expone la API al frontend.** Cada método de `Api` queda disponible en JS
+   como `window.pywebview.api.<nombre>` — ese es el puente que usa
+   `src/lib/pywebviewApi.ts`.
+"""
+
+import functools
+import http.server
+import pathlib
+import socketserver
+import sys
+import threading
+import traceback
+
+try:
+    import webview
+except ImportError:
+    # Casi siempre es que se lanzó con el Python del sistema en vez del del
+    # venv, y las deps viven ahí. Un traceback pelado ("No module named
+    # 'webview'") no dice eso; esto sí, y da el comando exacto.
+    sys.exit(
+        "Faltan dependencias del shell.\n"
+        "\n"
+        "Lo más probable es que se esté usando el Python del sistema en vez del\n"
+        "del venv del proyecto. Corré:\n"
+        "\n"
+        "    npm run app\n"
+        "\n"
+        "que ya apunta a shell\\.venv\\Scripts\\python.exe.\n"
+        "\n"
+        "Si el venv no existe todavía:\n"
+        "\n"
+        "    python -m venv shell/.venv\n"
+        "    shell\\.venv\\Scripts\\pip install -r shell\\requirements.txt"
+    )
+
+import autostart
+import db
+import recurrence
+import tray as tray_mod
+
+APP_NAME = "Ahora"
+
+# El build de Vite y el puerto del dev server.
+DIST_DIR = pathlib.Path(__file__).resolve().parent.parent / "dist"
+DEV_URL = "http://localhost:1420"
+
+WINDOW_WIDTH = 480
+WINDOW_HEIGHT = 800
+
+
+class _NoCacheHandler(http.server.SimpleHTTPRequestHandler):
+    """Sirve archivos sin cachear.
+
+    Es una app de escritorio, no un sitio: el "build" cambia cada vez que se
+    compila, y un `index.html` cacheado mostrando un bundle viejo sería
+    confuso de depurar. `SimpleHTTPRequestHandler` manda `Last-Modified`, así
+    que sin esto el navegador puede quedarse pegado con una versión anterior.
+    """
+
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        super().end_headers()
+
+    def log_message(self, *args):
+        # El servidor está acá solo para servir archivos; los 404 de las
+        # peticiones que hace WebView2 no son información útil.
+        pass
+
+
+def _serve_dist(directory: pathlib.Path) -> str:
+    """Levanta un servidor estático para `directory` y devuelve su URL.
+
+    Pywebview tiene su propio servidor para rutas locales, pero en la 6.2.1
+    su ruta para `/` está rota: llama al handler de assets sin argumentos y
+    la carga inicial de la página responde 500 (ventana en blanco). Servir el
+    directorio con el servidor de la stdlib son veinte líneas y funciona.
+
+    Puerto 0 = que el sistema elija uno libre, así dos copias de la app pueden
+    convivir sin pelear por el 1420. El hilo es daemon para que no impida
+    terminar el proceso.
+    """
+    handler = functools.partial(_NoCacheHandler, directory=str(directory))
+    server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), handler)
+    server.daemon_threads = True
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{server.server_address[1]}/"
+
+
+def resolve_url(force_dev: bool = False) -> str:
+    """Qué cargar en la ventana: el build si existe, si no el dev server.
+
+    El criterio es "¿hay `dist/index.html`?". Un `dist/` a medio copiar (sin
+    index.html) no cuenta como build — se usa el dev server antes que abrir un
+    directorio vacío.
+
+    `force_dev` (el flag `--dev`) salta la búsqueda del build. Hace falta
+    porque si hay un `dist/` de una compilación anterior, sin este flag la app
+    serviría ese build viejo y el hot-reload del dev server no se vería: la
+    ventana abriría bien, pero con el código de la última compilación.
+    """
+    if not force_dev and (DIST_DIR / "index.html").is_file():
+        return _serve_dist(DIST_DIR)
+    return DEV_URL
+
+
+class Api:
+    """Cada método queda expuesto en JS como `window.pywebview.api.<nombre>`.
+
+    Los de datos son los de `db.py`; los de sistema (autostart, notificaciones)
+    no son SQL y por eso viven acá, de vuelta de sus plugins anteriores.
+    """
+
+    def __init__(self, tray):
+        self._tray = tray
+
+    # --- datos ---
+
+    def list_items(self):
+        return db.list_items()
+
+    def add_item(self, item):
+        db.add_item(item)
+
+    def complete_item(self, item_id):
+        db.complete_item(item_id)
+
+    def skip_item(self, item_id):
+        db.skip_item(item_id)
+
+    def start_item(self, item_id):
+        db.start_item(item_id)
+
+    def unstart_item(self, item_id):
+        db.unstart_item(item_id)
+
+    def snooze_item(self, item_id, snoozed_until_iso):
+        db.snooze_item(item_id, snoozed_until_iso)
+
+    def record_seguimiento_nag(self, item_id, nagged_at_iso, nagged_today_count):
+        db.record_seguimiento_nag(item_id, nagged_at_iso, nagged_today_count)
+
+    def delete_item(self, item_id):
+        db.delete_item(item_id)
+
+    def archive_completed(self):
+        db.archive_completed()
+
+    def auto_archive_missed_citas(self):
+        """Citas perdidas que se archivan solas (docs/FILOSOFIA.md, "Estados").
+
+        La corre `refresh()` del frontend, no solo el arranque: la app vive en
+        bandeja días, y si dependiera del arranque una cita de ayer seguiría
+        `pendiente` hasta el día siguiente. Devuelve cuántas archivó, que
+        normalmente es 0.
+        """
+        return db.auto_archive_missed_citas()
+
+    def list_recurrence_rules(self):
+        return db.list_recurrence_rules()
+
+    def create_recurrence_rule(self, rule):
+        db.create_recurrence_rule(rule)
+
+    def materialize_occurrence(self, rule, date):
+        return db.materialize_occurrence(rule, date)
+
+    def get_settings(self):
+        return db.get_settings()
+
+    def update_settings(self, partial):
+        db.update_settings(partial)
+
+    def expand_recurrences(self, rules, from_, to):
+        return recurrence.expand_recurrences(rules, from_, to)
+
+    # --- sistema ---
+
+    def get_autostart(self):
+        """Si la app arranca con el sistema. El toggle de Ajustes lo muestra."""
+        return autostart.is_enabled()
+
+    def set_autostart(self, enabled):
+        """Prende/apaga el autostart. Devuelve el estado real resultante.
+
+        `set_enabled` ya devuelve la verdad (puede fallar al escribir el
+        registro), así que el toggle de Ajustes no queda mintiendo.
+        """
+        return autostart.set_enabled(bool(enabled))
+
+    def notify(self, title, body=""):
+        """Notificación del sistema operativo, para cuando la ventana está oculta."""
+        return self._tray.notify(title, body)
+
+    def quit(self):
+        """Cierra la app de verdad (equivale a "Salir" en la bandeja)."""
+        _quit_app()
+
+
+def _show_window(window) -> None:
+    """Trae la ventana al frente. Lo que llama el ícono de la bandeja.
+
+    `show()` alcanza para todos los casos: en Windows hace `Show()` +
+    `Activate()`, y `Show()` sobre una ventana minimizada la restaura. No hace
+    falta un `restore()` aparte ni preguntar por el estado.
+    """
+    try:
+        window.show()
+    except Exception:
+        pass
+
+
+def _quit_app() -> None:
+    """Termina el proceso. Lo llama el menú "Salir" de la bandeja.
+
+    Destruir la última ventana es lo que hace que `webview.start()` vuelva y
+    el proceso termine — por eso "Salir" sí cierra de verdad y la X no.
+    """
+    for window in list(webview.windows):
+        try:
+            window.destroy()
+        except Exception:
+            pass
+
+
+def main() -> None:
+    db.migrate()
+
+    url = resolve_url(force_dev="--dev" in sys.argv)
+    # Con `--hidden` (autostart) la app arranca en bandeja sin molestar. Sin
+    # él, se muestra normalmente.
+    start_hidden = "--hidden" in sys.argv
+
+    # El ícono de bandeja se crea antes que la ventana, pero sus acciones
+    # hablan de `window` — que todavía no existe. Eso está bien porque las
+    # funciones se evalúan recién cuando alguien toca el menú, y para entonces
+    # `window` ya tiene valor (los closures ven la variable, no su valor).
+    tray = tray_mod.Tray(on_open=lambda: _show_window(window), on_quit=_quit_app)
+
+    window = webview.create_window(
+        APP_NAME,
+        url,
+        width=WINDOW_WIDTH,
+        height=WINDOW_HEIGHT,
+        hidden=start_hidden,
+        min_size=(380, 520),
+        js_api=Api(tray),
+    )
+
+    def on_closing() -> bool:
+        """La X esconde la ventana en vez de cerrar la app.
+
+        Devolver False cancela el cierre (así está modelado `events.closing` en
+        pywebview: el handler cancela cuando devuelve False). Sin esto, cerrar
+        la ventana mataría el proceso y con él el motor de avisos — la app
+        dejaría de avisar sin que nadie se entere.
+        """
+        window.hide()
+        return False
+
+    window.events.closing += on_closing
+
+    # El ícono de bandeja corre en su propio hilo, porque `webview.start()`
+    # ocupa el principal hasta que la app termina. Si no se puede levantar
+    # (sin pystray, ícono ilegible), la app sigue andando con la ventana.
+    tray.start()
+    try:
+        webview.start(debug=False)
+    finally:
+        # Salir de `start()` significa que no queda ninguna ventana: la app
+        # terminó. Se baja el ícono de bandeja para que no quede un fantasma.
+        tray.stop()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        # Si pywebview no puede arrancar (no hay WebView2, falta una DLL), el
+        # traceback en una consola que nadie ve no sirve de nada: se escribe
+        # en un archivo al lado del script.
+        with open(pathlib.Path(__file__).parent / "crash.log", "w", encoding="utf-8") as f:
+            f.write(traceback.format_exc())
+        raise
