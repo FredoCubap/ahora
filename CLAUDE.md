@@ -52,6 +52,7 @@ npm run format      # Prettier
 - **Si existe `dist/`, `npm run app` sirve ese build viejo** y el hot-reload no se ve. Para desarrollar usa `npm run app:dev`.
 - **La X de la ventana la esconde, no cierra la app:** sigue viva en bandeja con el motor de avisos. Lo único que termina el proceso es "Salir" (la bandeja o Ajustes). Si la app no arranca, el traceback queda en `shell/crash.log`.
 - **`window.destroy()` dispara `closing`:** el manejador de la X lo cancela salvo que `_quitting` esté levantada (la levanta `_quit_app()` en `shell/main.py`). Sin la bandera, "Salir" esconde la ventana y el proceso sigue vivo.
+- **Las rutas se piden a `shell/paths.py`, nunca con `__file__`.** `RESOURCE_DIR` (solo lectura: `dist/`, `assets/`) y `DATA_DIR` (lo que se escribe: agenda, `crash.log`) cambian entre desarrollo y empaquetado. Calcular una ruta a mano rompe el `.exe`.
 - **`evaluate_js` no devuelve el valor resuelto** de una promesa (llega `{}`). Para comprobar el puente de punta a punta, mira cómo lo resuelve `shell/smoke_test.py`.
 - **El pywebview 6.2.1 tiene rota la ruta `/` de su servidor local.** Por eso `main.py` sirve `dist/` con un servidor propio de la stdlib. No lo cambies sin probarlo.
 - **Las horas son locales, no UTC.** Las del motor (`fixed_time`, `due_time`, `snoozed_until`, `last_nagged_at`) se guardan en hora local sin zona; usa `toLocalIso` (`src/lib/formatTime.ts`). `created_at` y `completed_at` salen de `datetime('now')` de SQLite, que es UTC, así que no los compares con las anteriores sin convertir.

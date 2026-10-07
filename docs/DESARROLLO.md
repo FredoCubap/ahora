@@ -146,16 +146,19 @@ Es también la única plataforma sin sorpresas: el shell usa el WebView2 de Wind
 
 ### Empaquetado
 
-**No hay instalador todavía.** No se compila un `.exe` distribuible: la app se lanza desde el código con `npm run app`.
+Hay instalador **de prueba** (no distribución oficial): `npm run package` compila la interfaz y empaqueta la app con PyInstaller (modo carpeta) en `build/package/Ahora/Ahora.exe`; `npm run installer` lo envuelve con Inno Setup en `build/installer/Ahora-Setup-prueba.exe`. Las salidas van a `build/`, ignorado por git.
 
-Lo que falta para llegar ahí, y que conviene saber antes de intentarlo:
+Requiere las dependencias de construcción (PyInstaller no va en el venv de la app):
 
-- [PyInstaller](https://pyinstaller.org) (o similar) para armar el ejecutable.
-- Incluir `assets/icon.ico` y `shell/` en el bundle.
-- Verificar que `pystray` y WebView2 funcionen desde un ejecutable empaquetado, no desde un venv.
-- Decidir si el `.exe` lleva WebView2 embebido (más pesado, funciona en máquinas sin él) o lo da por supuesto (Windows 10/11 ya lo trae).
+```bash
+shell\.venv\Scripts\pip install -r shell\requirements-dev.txt
+```
 
-Es trabajo de verdad, no un comando que falte. Por eso está listado como pendiente y no escondido en un `npm run build`.
+La app empaquetada guarda sus datos en `%LOCALAPPDATA%\Ahora`, no junto al `.exe`: una actualización no borra la agenda. En desarrollo sigue todo igual (`shell/agenda.db`). Para probar sin tocar nada real, `AHORA_DATA_DIR` apunta los datos a otra carpeta.
+
+Si venís de desarrollo y querés llevarte tu agenda a la instalada, copiá `shell/agenda.db` a `%LOCALAPPDATA%\Ahora\agenda.db` a mano (no hay migración automática, a propósito).
+
+El instalador no está firmado: SmartScreen va a avisar. Es esperado en una versión de prueba.
 
 ## Estrategia de ramas por plataforma
 

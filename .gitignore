@@ -16,6 +16,9 @@ dist
 dist-ssr
 *.local
 
+# Salidas de PyInstaller e Inno Setup (se generan con npm run package/installer)
+build/
+
 # Logs
 logs
 *.log
