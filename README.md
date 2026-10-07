@@ -100,16 +100,16 @@ una función, se comprueba que no lo contradiga.
 
 ## Stack
 
-| Capa    | Tecnología                                    |
-| ------- | --------------------------------------------- |
-| Shell   | [pywebview](https://pywebview.flowrl.com) (Python) |
-| Ventana | WebView2 de Windows (Edge, ya en el sistema)   |
-| UI      | React 19 + TypeScript + Vite                  |
-| Estilos | Tailwind CSS 4                                |
-| Estado  | Zustand · validación con Zod                  |
-| Datos   | SQLite (100 % local, vía `sqlite3` de la stdlib) |
+| Capa    | Tecnología                                                   |
+| ------- | ------------------------------------------------------------ |
+| Shell   | [pywebview](https://pywebview.flowrl.com) (Python)           |
+| Ventana | WebView2 de Windows (Edge, ya en el sistema)                 |
+| UI      | React 19 + TypeScript + Vite                                 |
+| Estilos | Tailwind CSS 4 · fuentes vendorizadas (Nunito + Karla)       |
+| Estado  | Zustand · validación con Zod                                 |
+| Datos   | SQLite (100 % local, vía `sqlite3` de la stdlib)             |
 | Sistema | Registro de Windows (autostart) · pystray (bandeja y avisos) |
-| Iconos  | lucide-react                                  |
+| Iconos  | lucide-react                                                 |
 
 ## Desarrollo
 
@@ -229,8 +229,8 @@ los métodos de `Api` en `shell/main.py`.
 // src/lib/db.ts
 import { getApi } from "./pywebviewApi";
 
-const api = await getApi();          // espera al evento pywebviewready
-return api.list_items();              // lo resuelve shell/db.py contra SQLite
+const api = await getApi(); // espera al evento pywebviewready
+return api.list_items(); // lo resuelve shell/db.py contra SQLite
 ```
 
 `getApi()` no resuelve de inmediato: pywebview inyecta `window.pywebview` de
