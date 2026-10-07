@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useAppStore } from "./store/useAppStore";
+import { applyTheme } from "./lib/theme";
 import { Ahora } from "./routes/Ahora";
 import { Semana } from "./routes/Semana";
 import { Ajustes } from "./routes/Ajustes";
@@ -19,6 +20,14 @@ function App() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // El script de index.html ya puso el tema guardado antes del primer pintado;
+  // esto cubre cuando la página se abre sin ese parámetro (p. ej. contra el dev
+  // server) y mantiene el atributo en sintonía con `settings` de ahí en más.
+  const theme = useAppStore((s) => s.settings?.theme);
+  useEffect(() => {
+    if (theme) applyTheme(theme);
+  }, [theme]);
 
   return (
     <div className="min-h-screen flex justify-center" style={{ background: "var(--ahora-bg)" }}>
