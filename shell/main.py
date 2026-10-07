@@ -61,6 +61,14 @@ DEV_URL = "http://localhost:1420"
 WINDOW_WIDTH = 480
 WINDOW_HEIGHT = 800
 
+# Bandera que distingue "la app quiere terminar" de "el usuario pulsó la X".
+# Ambos llegan como el mismo evento `closing`, y el manejador de la X lo
+# cancela siempre — así que sin esto, `window.destroy()` desde "Salir" también
+# se cancela y el proceso no termina nunca. `_quit_app()` la levanta antes de
+# destruir; el manejador la mira y deja pasar el cierre. No hace falta bajarla:
+# tras levantarla el proceso termina.
+_quitting = threading.Event()
+
 
 class _NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     """Sirve archivos sin cachear.
@@ -243,12 +251,47 @@ def _quit_app() -> None:
 
     Destruir la última ventana es lo que hace que `webview.start()` vuelva y
     el proceso termine — por eso "Salir" sí cierra de verdad y la X no.
+
+    Ojo: `destroy()` no es un cierre a la fuerza, pasa por el evento `closing`
+    y por lo tanto por el manejador de la X, que lo cancelaría. Por eso se
+    levanta `_quitting` antes: sin la bandera, "Salir" escondería la ventana
+    y el proceso seguiría vivo.
     """
+    _quitting.set()
     for window in list(webview.windows):
         try:
             window.destroy()
         except Exception:
             pass
+
+
+def make_close_handler(window):
+    """Construye el manejador de cierre para una ventana.
+
+    Es función de módulo (y no un cierre anidado en `main()`) para poder
+    probarla con una ventana falsa: `shell/test_quit.py` lo hace sin abrir
+    nada.
+
+    La X esconde la ventana en vez de cerrar la app. Devolver False cancela el
+    cierre (así está modelado `events.closing` en pywebview: el handler cancela
+    cuando devuelve False). Sin esto, cerrar la ventana mataría el proceso y
+    con él el motor de avisos — la app dejaría de avisar sin que nadie se
+    entere.
+
+    Pero cuando la app está saliendo (`_quitting` levantada por `_quit_app`),
+    el manejador no esconde nada y devuelve True: el cierre sigue, la última
+    ventana se destruye y `webview.start()` vuelve. Sin esta distinción,
+    `destroy()` pasaría por este mismo manejador, se cancelaría, y "Salir" no
+    terminaría el proceso nunca.
+    """
+
+    def on_closing() -> bool:
+        if _quitting.is_set():
+            return True
+        window.hide()
+        return False
+
+    return on_closing
 
 
 def main() -> None:
@@ -275,18 +318,7 @@ def main() -> None:
         js_api=Api(tray),
     )
 
-    def on_closing() -> bool:
-        """La X esconde la ventana en vez de cerrar la app.
-
-        Devolver False cancela el cierre (así está modelado `events.closing` en
-        pywebview: el handler cancela cuando devuelve False). Sin esto, cerrar
-        la ventana mataría el proceso y con él el motor de avisos — la app
-        dejaría de avisar sin que nadie se entere.
-        """
-        window.hide()
-        return False
-
-    window.events.closing += on_closing
+    window.events.closing += make_close_handler(window)
 
     # El ícono de bandeja corre en su propio hilo, porque `webview.start()`
     # ocupa el principal hasta que la app termina. Si no se puede levantar
