@@ -297,4 +297,3 @@ desaparición es previa e independiente.
 
 Cuando esto cambie, el detalle de implementación va en el README; este
 documento sigue siendo sobre el _qué_ y el _por qué_, no sobre el _cómo_.
-

@@ -27,7 +27,7 @@ describe("parseQuickCapture", () => {
   });
 
   it("reconoce 'mañana'", () => {
-    const r =parseQuickCapture("pagar factura mañana 09:00", now());
+    const r = parseQuickCapture("pagar factura mañana 09:00", now());
     expect(r.title).toBe("pagar factura");
     expect(r.label).toContain("mañana");
   });
