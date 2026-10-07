@@ -20,8 +20,8 @@
 
 ## 4. Instalador
 
-- [ ] 4.1 Crear `installer/ahora.iss` y el script `installer` de `package.json` (que llame a `ISCC.exe` si existe y si no explique cómo instalar Inno Setup) con: instalación por usuario sin administrador, `CloseApplications`, acceso directo en el menú Inicio con el ícono, versión `0.1.0-prueba` tomada de `package.json`, salida `build/installer/Ahora-Setup-prueba.exe`, y borrado de la entrada `Run\Ahora` del registro al desinstalar sin tocar `%LOCALAPPDATA%\Ahora`. Verificar que `npm run installer` genera el `.exe`.
-- [ ] 4.2 En `README.md`, añadir una sección corta "Versión de prueba" que explique cómo obtener el instalador, que no está firmado (aviso de SmartScreen) y que no es la distribución oficial. Verificar que `npx prettier --check README.md` pasa.
+- [x] 4.1 Crear `installer/ahora.iss` y el script `installer` de `package.json` (que llame a `ISCC.exe` si existe y si no explique cómo instalar Inno Setup) con: instalación por usuario sin administrador, `CloseApplications`, acceso directo en el menú Inicio con el ícono, versión `0.1.0-prueba` tomada de `package.json`, salida `build/installer/Ahora-Setup-prueba.exe`, y borrado de la entrada `Run\Ahora` del registro al desinstalar sin tocar `%LOCALAPPDATA%\Ahora`. Verificar que `npm run installer` genera el `.exe`.
+- [x] 4.2 En `README.md`, añadir una sección corta "Versión de prueba" que explique cómo obtener el instalador, que no está firmado (aviso de SmartScreen) y que no es la distribución oficial. Verificar que `npx prettier --check README.md` pasa.
 
 ## 5. Verificación en una máquina limpia (Fredo y Claude)
 

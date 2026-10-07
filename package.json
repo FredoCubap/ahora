@@ -13,6 +13,7 @@
     "ci": "node scripts/ci.mjs",
     "check": "node scripts/ci.mjs shell",
     "package": "node scripts/package.mjs",
+    "installer": "node scripts/installer.mjs",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
