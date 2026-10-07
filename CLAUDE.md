@@ -70,6 +70,8 @@ npm run format      # Prettier
 
 ## Git
 
+Ramas, PRs y el reparto de trabajo con agentes están en [`CONTRIBUTING.md`](CONTRIBUTING.md): léelo antes de crear una rama. Lo esencial:
+
 - Commits atómicos con el formato `<prefijo>: <verbo en 3ª persona> ...` (`feat`, `fix`, `refactor`, `test`, `docs`, `chore`): minúscula tras los dos puntos, sin punto final, sin paréntesis y como máximo 72 caracteres.
 - Si el cambio no es trivial, el body explica el porqué (el qué ya lo cuenta el diff).
 - Los commits salen bajo el nombre de Fredo, sin `Co-Authored-By`.
