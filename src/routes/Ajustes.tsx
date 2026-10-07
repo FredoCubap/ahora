@@ -293,23 +293,6 @@ export function Ajustes() {
             </button>
           ))}
         </div>
-        <div
-          className="flex items-center justify-between rounded-2xl px-4 py-3.5"
-          style={{ background: "var(--ahora-chip-bg)" }}
-        >
-          <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
-            Color de acento
-          </div>
-          <div
-            className="rounded-full"
-            style={{
-              width: 22,
-              height: 22,
-              background: "var(--ahora-accent)",
-              boxShadow: "0 0 0 1.5px var(--ahora-border)",
-            }}
-          />
-        </div>
       </div>
 
       <div className="flex flex-col gap-2.5">
@@ -326,7 +309,8 @@ export function Ajustes() {
         >
           <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
             Iniciar con el sistema
-          </div>          <div
+          </div>{" "}
+          <div
             className="rounded-full flex-shrink-0 flex"
             style={{
               width: 34,
