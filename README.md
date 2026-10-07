@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="public/ahora-icon.svg" width="96" alt="Ícono de Ahora: una A geométrica con una flecha ámbar" />
+
 # Ahora
 
 ### Tu agenda no debería esperar a que la abras.
@@ -94,7 +96,6 @@ No es un gestor de proyectos. No es una herramienta de equipo. No es control de 
 Lo que falta:
 
 - ⬜ **Instalador.** Por ahora la app se lanza desde el código con `npm run app`. Ver [docs/DESARROLLO.md](docs/DESARROLLO.md#empaquetado).
-- ⬜ **Ícono propio.** El de la bandeja es todavía un marcador de posición.
 
 ## Probarla
 
