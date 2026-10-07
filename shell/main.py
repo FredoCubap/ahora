@@ -49,13 +49,14 @@ except ImportError:
 
 import autostart
 import db
+import paths
 import recurrence
 import tray as tray_mod
 
 APP_NAME = "Ahora"
 
-# El build de Vite y el puerto del dev server.
-DIST_DIR = pathlib.Path(__file__).resolve().parent.parent / "dist"
+# El build de Vite (un recurso: lo ubica `paths`) y el puerto del dev server.
+DIST_DIR = paths.RESOURCE_DIR / "dist"
 DEV_URL = "http://localhost:1420"
 
 WINDOW_WIDTH = 480
@@ -295,6 +296,10 @@ def make_close_handler(window):
 
 
 def main() -> None:
+    # La carpeta de datos puede no existir (primer arranque instalada): se crea
+    # antes de migrar, porque si no `sqlite3.connect` falla. En desarrollo ya
+    # existe (`shell/`) y esto no hace nada.
+    paths.DATA_DIR.mkdir(parents=True, exist_ok=True)
     db.migrate()
 
     url = with_theme(resolve_url(force_dev="--dev" in sys.argv), db.get_settings()["theme"])
@@ -341,7 +346,7 @@ if __name__ == "__main__":
     except Exception:
         # Si pywebview no puede arrancar (no hay WebView2, falta una DLL), el
         # traceback en una consola que nadie ve no sirve de nada: se escribe
-        # en un archivo al lado del script.
-        with open(pathlib.Path(__file__).parent / "crash.log", "w", encoding="utf-8") as f:
+        # en un archivo en la carpeta de datos, al lado de la agenda.
+        with open(paths.DATA_DIR / "crash.log", "w", encoding="utf-8") as f:
             f.write(traceback.format_exc())
         raise

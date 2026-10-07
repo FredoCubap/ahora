@@ -14,12 +14,14 @@ app **no se cae**: `Tray.start()` devuelve `False` y la ventana sigue siendo
 usable. La bandeja es una comodidad, no un requisito para usar la agenda.
 """
 
-import pathlib
+import paths
 
 APP_NAME = "Ahora"
 
-# assets/ vive junto al repo, un nivel arriba de shell/.
-ICON_PATH = pathlib.Path(__file__).resolve().parent.parent / "assets" / "icon.ico"
+# El ícono es un recurso: vive en `assets/`, lo ubica `paths` según se corra
+# desde el repo o empaquetado. Se mantiene el nombre porque `main.py` y
+# `test_tray.py` lo usan.
+ICON_PATH = paths.RESOURCE_DIR / "assets" / "icon.ico"
 
 
 def _load_image():

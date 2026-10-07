@@ -4,9 +4,9 @@
 
 ## 1. Rutas y datos
 
-- [ ] 1.1 Crear `shell/paths.py` con una función pura (recibe `frozen`, `meipass`, `localappdata`, la raíz del repo y el valor de `AHORA_DATA_DIR`) que devuelva `RESOURCE_DIR` y `DATA_DIR` según la decisión 1 y 2 del diseño, y las constantes del módulo que la usan. Crear `shell/test_paths.py` (en el estilo de los otros, con `assert`) que cubra: desarrollo (datos en `shell/`), empaquetado (datos en `%LOCALAPPDATA%\Ahora`, recursos en `_MEIPASS`) y el override `AHORA_DATA_DIR`. Verificar con `npm run ci shell` que pasa.
-- [ ] 1.2 En `shell/db.py`, `shell/main.py` y `shell/tray.py`, sustituir los cálculos a mano (`DB_PATH`, `DIST_DIR`, `crash.log`, `ICON_PATH`) por los valores de `paths`, y crear `DATA_DIR` en `main()` antes de `db.migrate()`. Mantener `db.DB_PATH` como variable de módulo. Verificar con `npm run ci` que todo sigue en verde sin cambiar ningún test existente, y que desde el repo `db.DB_PATH` sigue siendo `shell/agenda.db`.
-- [ ] 1.3 En `shell/test_autostart.py`, añadir el caso empaquetado: con `sys.frozen` simulado, `_launch_command()` devuelve la ruta de `sys.executable` entre comillas más `--hidden`, sin `pythonw.exe` ni `main.py`. Restaurar `sys.frozen` al terminar. Verificar con `npm run ci shell`.
+- [x] 1.1 Crear `shell/paths.py` con una función pura (recibe `frozen`, `meipass`, `localappdata`, la raíz del repo y el valor de `AHORA_DATA_DIR`) que devuelva `RESOURCE_DIR` y `DATA_DIR` según la decisión 1 y 2 del diseño, y las constantes del módulo que la usan. Crear `shell/test_paths.py` (en el estilo de los otros, con `assert`) que cubra: desarrollo (datos en `shell/`), empaquetado (datos en `%LOCALAPPDATA%\Ahora`, recursos en `_MEIPASS`) y el override `AHORA_DATA_DIR`. Verificar con `npm run ci shell` que pasa.
+- [x] 1.2 En `shell/db.py`, `shell/main.py` y `shell/tray.py`, sustituir los cálculos a mano (`DB_PATH`, `DIST_DIR`, `crash.log`, `ICON_PATH`) por los valores de `paths`, y crear `DATA_DIR` en `main()` antes de `db.migrate()`. Mantener `db.DB_PATH` como variable de módulo. Verificar con `npm run ci` que todo sigue en verde sin cambiar ningún test existente, y que desde el repo `db.DB_PATH` sigue siendo `shell/agenda.db`.
+- [x] 1.3 En `shell/test_autostart.py`, añadir el caso empaquetado: con `sys.frozen` simulado, `_launch_command()` devuelve la ruta de `sys.executable` entre comillas más `--hidden`, sin `pythonw.exe` ni `main.py`. Restaurar `sys.frozen` al terminar. Verificar con `npm run ci shell`.
 
 ## 2. Dependencias
 
