@@ -23,15 +23,15 @@ image = tray._load_image()
 assert image is not None, f"Pillow no pudo leer {tray.ICON_PATH}"
 print(f"   ok  ícono leído: {tray.ICON_PATH.name} {image.size}")
 
-# Windows necesita varias resoluciones en el .ico para la bandeja (16, 24, 32,
-# 48...). Con una sola, el ícono se ve borroso en la barra de tareas.
-try:
-    sizes = sorted(image.info.get("sizes", []))
-except AttributeError:
-    sizes = []  # Pillow ≥ 10 lo expone distinto; no es motivo de fallo
-if sizes:
-    assert any(w <= 32 for w, _ in sizes), f"sin resolución chica para bandeja: {sizes}"
-    print(f"   ok  resoluciones: {[f'{w}x{h}' for w, h in sizes]}")
+# Windows necesita una versión propia del ícono por cada tamaño que dibuja
+# (bandeja, barra de tareas, Alt+Tab...). Si falta alguna la reescala de otra y
+# se ve borrosa, así que se exigen las siete (spec: openspec "identidad-de-la-app").
+REQUERIDAS = {(n, n) for n in (16, 24, 32, 48, 64, 128, 256)}
+sizes = set(image.info.get("sizes", ()))
+assert sizes, "no se pudieron leer las resoluciones del .ico"
+faltan = sorted(REQUERIDAS - sizes)
+assert not faltan, f"al .ico le faltan resoluciones: {[f'{w}x{h}' for w, h in faltan]}"
+print(f"   ok  resoluciones: {[f'{w}x{h}' for w, h in sorted(sizes)]}")
 
 # 2. Sin bandeja, todo degrada en silencio en vez de reventar. Es el contrato
 #    que permite que la app arranque aunque pystray no esté.
