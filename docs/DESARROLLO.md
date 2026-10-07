@@ -70,7 +70,8 @@ app-ahora/
 │  ├─ tray.py                # ícono de bandeja y notificaciones
 │  └─ test_*.py              # checks del shell (scripts con assert, no pytest)
 ├─ scripts/ci.mjs            # `npm run ci`: todo en verde con un comando
-├─ assets/icon.ico           # ícono de la app y de la bandeja
+├─ assets/icon.ico           # el ícono: ventana, barra de tareas y bandeja (7 tamaños)
+├─ public/ahora-*.svg        # el ícono (ahora-icon) y la marca sin fondo (ahora-mark): fuente editable
 └─ docs/                     # FILOSOFIA.md (el documento norte) y esta guía
 ```
 
@@ -89,6 +90,12 @@ return api.list_items(); // lo resuelve shell/db.py contra SQLite
 `getApi()` no resuelve de inmediato: pywebview inyecta `window.pywebview` de forma asíncrona, así que el puente espera el evento `pywebviewready`. Por eso cualquier código que use la base tiene que estar detrás de ese `await` — si no, `api` es un objeto vacío y la llamada falla.
 
 Para añadir un método al puente hay que tocar tres sitios: `Api` en `shell/main.py`, la interfaz `PywebviewApi` en `src/lib/pywebviewApi.ts` y, si es de datos, su función en `src/lib/db.ts`.
+
+### El ícono
+
+Un único archivo, `assets/icon.ico`, sirve a la bandeja (`shell/tray.py`) y a la ventana y la barra de tareas (`webview.start(icon=...)` en `shell/main.py`). Tiene que incluir los siete tamaños 16, 24, 32, 48, 64, 128 y 256 px, y `test_tray.py` lo exige.
+
+Las fuentes editables son `public/ahora-icon.svg` (con fondo, también es el favicon) y `public/ahora-mark.svg` (la marca sin fondo). El `.ico` viene pre-renderizado desde ellas: **no hay un script que lo regenere**, así que si se cambia el SVG hay que volver a exportar el `.ico` a mano.
 
 ## Tests
 

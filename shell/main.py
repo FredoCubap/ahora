@@ -293,7 +293,10 @@ def main() -> None:
     # (sin pystray, ícono ilegible), la app sigue andando con la ventana.
     tray.start()
     try:
-        webview.start(debug=False)
+        # `icon` es el de la ventana y la barra de tareas. La doc de pywebview
+        # dice que solo vale en GTK/Qt, pero platforms/winforms.py (6.2.1, la
+        # versión fijada) lo aplica a Form.Icon; sin él extrae el de python.exe.
+        webview.start(icon=str(tray_mod.ICON_PATH), debug=False)
     finally:
         # Salir de `start()` significa que no queda ninguna ventana: la app
         # terminó. Se baja el ícono de bandeja para que no quede un fantasma.
