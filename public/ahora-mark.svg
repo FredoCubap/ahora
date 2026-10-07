@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Ahora — Mark</title>
+  <desc>Marca vectorial transparente de Ahora: A geométrica con flecha ámbar.</desc>
+
+  <!-- Colores editables: marca #F4F1EA / acción #F59E0B -->
+  <g id="mark" fill="#F4F1EA">
+    <path id="a-left"
+      d="M120 383 C108 383 99 377 95 368 C92 361 92 354 95 347 L185 126 C192 109 205 97 221 92 C234 88 246 89 257 95 C271 102 279 113 285 128 L330 237 L287 276 L238 166 C234 157 226 153 219 157 C214 159 210 164 207 171 L151 303 L211 303 L191 351 C185 366 173 376 157 380 C145 383 132 383 120 383 Z"/>
+    <path id="a-right"
+      d="M330 237 L418 348 C423 355 423 364 419 372 C414 381 405 385 394 385 L358 385 C345 385 334 379 328 368 L282 302 L330 237 Z"/>
+  </g>
+
+  <g id="action-arrow" fill="#F59E0B">
+    <path id="arrow"
+      d="M247 229 L294 258 C302 263 302 271 294 276 L247 305 C238 311 228 305 228 295 L228 239 C228 229 238 223 247 229 Z"/>
+  </g>
+</svg>
