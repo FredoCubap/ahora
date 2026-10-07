@@ -219,7 +219,12 @@ CREATE TABLE settings (
   -- Defaults para ítems "en seguimiento" (ver sección dedicada).
   -- Cada 4h, máx. 3 avisos/día, salvo que el ítem lo sobreescriba.
   seguimiento_interval_min INTEGER NOT NULL DEFAULT 240,
-  seguimiento_daily_cap    INTEGER NOT NULL DEFAULT 3
+  seguimiento_daily_cap    INTEGER NOT NULL DEFAULT 3,
+
+  -- Tema de la interfaz. Se guarda aquí (y no en localStorage) para que
+  -- sobreviva a los reinicios; 'sistema' sigue al tema del sistema operativo.
+  theme         TEXT NOT NULL DEFAULT 'sistema'
+                CHECK (theme IN ('claro','oscuro','sistema'))
 );
 ```
 

@@ -94,7 +94,15 @@ ALTER TABLE item ADD COLUMN nagged_today_count INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE settings ADD COLUMN seguimiento_interval_min INTEGER NOT NULL DEFAULT 240;
 ALTER TABLE settings ADD COLUMN seguimiento_daily_cap INTEGER NOT NULL DEFAULT 3;
 """
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2]
+# Tema de la interfaz (claro / oscuro / sistema). Vive aquí y no en el
+# localStorage del WebView: con pywebview el modo privado lo borra en cada
+# arranque, y el puerto aleatorio de la app cambia el origen de todos modos.
+# Las bases existentes toman 'sistema', que es el comportamiento de antes.
+SCHEMA_V3 = """
+ALTER TABLE settings ADD COLUMN theme TEXT NOT NULL DEFAULT 'sistema'
+  CHECK (theme IN ('claro','oscuro','sistema'));
+"""
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3]
 
 
 def _connect() -> sqlite3.Connection:

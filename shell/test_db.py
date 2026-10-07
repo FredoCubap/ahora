@@ -11,6 +11,7 @@ con `addfinalizer` para que no quede si el script falla a mitad de camino.
 
 import os
 import shutil
+import sqlite3
 import tempfile
 from datetime import datetime, timedelta
 
@@ -121,6 +122,40 @@ assert _tarea in visibles, "una tarea vencida se archivó: dejaría de molestar"
 
 # Correrlo dos veces no debe volver a archivar nada: es idempotente.
 assert db.auto_archive_missed_citas() == 0, "no es idempotente"
+
+# Migración V3 (tema): una agenda creada en la versión 2, con datos, sube a la 3
+# sin perder nada y queda en 'sistema' (docs: openspec "apariencia").
+_nueva = db.DB_PATH
+db.DB_PATH = os.path.join(_tmpdir, "v2-agenda.db")
+_conn = sqlite3.connect(db.DB_PATH)
+for _sql in db.MIGRATIONS[:2]:
+    _conn.executescript(_sql)
+_conn.execute("PRAGMA user_version = 2")
+_conn.execute("INSERT INTO item (title) VALUES ('anterior a la V3')")
+_conn.execute("UPDATE settings SET work_start = '08:30'")
+_conn.commit()
+_conn.close()
+
+db.migrate()
+_conn = sqlite3.connect(db.DB_PATH)
+assert _conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 3
+_conn.close()
+assert [i["title"] for i in db.list_items()] == ["anterior a la V3"], "la V3 perdió un ítem"
+assert db.get_settings()["work_start"] == "08:30", "la V3 perdió un ajuste"
+assert db.get_settings()["theme"] == "sistema", "una agenda vieja debe quedar en 'sistema'"
+
+db.update_settings({"theme": "oscuro"})
+assert db.get_settings()["theme"] == "oscuro"
+try:
+    db.update_settings({"theme": "rosa"})
+    raise AssertionError("la base aceptó un tema inválido")
+except sqlite3.IntegrityError:
+    pass
+assert db.get_settings()["theme"] == "oscuro", "un tema inválido pisó el guardado"
+
+db.migrate()  # idempotente: no vuelve a correr la V3 ni toca el tema elegido
+assert db.get_settings()["theme"] == "oscuro"
+db.DB_PATH = _nueva
 
 shutil.rmtree(_tmpdir, ignore_errors=True)
 print("OK: las operaciones de datos andan, y las citas perdidas se archivan solas")
