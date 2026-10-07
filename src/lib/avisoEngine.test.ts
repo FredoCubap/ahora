@@ -24,6 +24,7 @@ const SETTINGS: Settings = {
   overdue_retry_max: 3,
   seguimiento_interval_min: 240,
   seguimiento_daily_cap: 3,
+  theme: "sistema",
 };
 
 /** "Ahora" fijo: un martes a las 10:00, pleno horario laboral. */

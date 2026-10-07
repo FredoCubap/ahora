@@ -50,6 +50,9 @@ export const newItemSchema = itemSchema.omit({
 // forzaría a todo caller a inventarse un valor que igual va a ser pisado.
 export type NewItem = z.input<typeof newItemSchema>;
 
+export const THEMES = ["claro", "oscuro", "sistema"] as const;
+export type ThemeChoice = (typeof THEMES)[number];
+
 export const settingsSchema = z.object({
   id: z.literal(1),
   work_start: z.string(),
@@ -60,6 +63,7 @@ export const settingsSchema = z.object({
   overdue_retry_max: z.number(),
   seguimiento_interval_min: z.number(),
   seguimiento_daily_cap: z.number(),
+  theme: z.enum(THEMES),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

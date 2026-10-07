@@ -1,34 +1,30 @@
-import { useCallback, useEffect, useState } from "react";
-
-export type ThemeChoice = "claro" | "oscuro" | "sistema";
-
-const STORAGE_KEY = "ahora-theme";
-
-function applyTheme(choice: ThemeChoice) {
-  const root = document.documentElement;
-  if (choice === "sistema") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", choice === "oscuro" ? "dark" : "light");
-}
+import { useCallback } from "react";
+import { useAppStore } from "../store/useAppStore";
+import { applyTheme } from "../lib/theme";
+import { ThemeChoice } from "../lib/types";
 
 /**
- * Preferencia de vista claro/oscuro/sistema, persistida en localStorage.
- * Distinto del sistema de temas cargables por archivo (parqueado para más
- * adelante) — esto es solo el toggle claro/oscuro/sistema de Ajustes.
+ * Preferencia de tema (claro / oscuro / sistema). Vive en `settings.theme`, en
+ * la base de datos, junto al resto de los ajustes: `localStorage` no sirve en
+ * esta app porque con pywebview no se conserva entre ejecuciones.
+ *
+ * Aplicar el atributo al arrancar no es cosa de este hook (lo hace el script
+ * de index.html y el efecto de App.tsx): esto es lo que usa Ajustes para
+ * mostrar y cambiar la elección.
  */
 export function useTheme() {
-  const [choice, setChoiceState] = useState<ThemeChoice>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === "claro" || stored === "oscuro" || stored === "sistema" ? stored : "sistema";
-  });
+  const choice = useAppStore((s) => s.settings?.theme ?? "sistema");
+  const updateSettings = useAppStore((s) => s.updateSettings);
 
-  useEffect(() => {
-    applyTheme(choice);
-  }, [choice]);
-
-  const setChoice = useCallback((next: ThemeChoice) => {
-    localStorage.setItem(STORAGE_KEY, next);
-    setChoiceState(next);
-  }, []);
+  const setChoice = useCallback(
+    (next: ThemeChoice) => {
+      // Se aplica de inmediato, sin esperar a que la base responda y el store
+      // se refresque: el usuario ve el cambio al tocar el botón.
+      applyTheme(next);
+      void updateSettings({ theme: next });
+    },
+    [updateSettings],
+  );
 
   return { choice, setChoice };
 }

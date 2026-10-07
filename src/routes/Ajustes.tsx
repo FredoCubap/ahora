@@ -1,7 +1,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { Header } from "../components/Header";
-import { useTheme, ThemeChoice } from "../hooks/useTheme";
+import { useTheme } from "../hooks/useTheme";
+import { ThemeChoice } from "../lib/types";
 import { getAutostart, quitApp, setAutostart } from "../lib/system";
 
 const DAY_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
