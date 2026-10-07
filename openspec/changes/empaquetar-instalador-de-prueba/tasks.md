@@ -10,7 +10,7 @@
 
 ## 2. Dependencias
 
-- [ ] 2.1 Fijar en `shell/requirements.txt` `pythonnet` y `clr_loader` a las versiones que da `shell\.venv\Scripts\pip freeze` (3.1.0 y 0.3.1 al momento de escribir esto) y crear `shell/requirements-dev.txt` con `-r requirements.txt` y `pyinstaller==6.22.3`. Verificar creando un entorno virtual temporal fuera del repo, instalando `requirements-dev.txt` y comprobando que `npm run ci` sigue en verde con las versiones fijadas.
+- [x] 2.1 Fijar en `shell/requirements.txt` `pythonnet` y `clr_loader` a las versiones que da `shell\.venv\Scripts\pip freeze` (3.1.0 y 0.3.1 al momento de escribir esto) y crear `shell/requirements-dev.txt` con `-r requirements.txt` y `pyinstaller==6.22.3`. Verificar creando un entorno virtual temporal fuera del repo, instalando `requirements-dev.txt` y comprobando que `npm run ci` sigue en verde con las versiones fijadas.
 
 ## 3. Empaquetado
 
