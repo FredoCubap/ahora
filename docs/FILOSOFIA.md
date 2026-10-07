@@ -270,16 +270,11 @@ Mañana, la semana y el backlog viven en otra ruta.
 
 ## Estado actual vs esta filosofía
 
-Casi todo lo de arriba está implementado. El esquema `item` /
+Todo lo de arriba está implementado, incluido `en_progreso` ("Empezar" en el
+menú de cada ítem, con el back off parcial de avisos). El esquema `item` /
 `recurrence_rule` / `settings` vive en `shell/db.py`, el cálculo de
 ocurrencias en `shell/recurrence.py` y el motor de avisos en
 `src/lib/avisoEngine.ts`.
-
-Lo que este documento define y el código todavía no hace:
-
-- `status = 'en_progreso'` está en el enum y en los schemas, pero nada lo
-  escribe: no hay forma de marcar una tarea como empezada. La razón por la que
-  se pidió ("el usuario la marcó como empezada") sigue sin construirse.
 
 ### Una nota sobre "Pospón"
 
@@ -291,7 +286,7 @@ estaba y el aviso simplemente calla, y vuelve a sonar solo cuando expira
 
 Que una cita que ya pasó salga de la vista principal **no** es lo mismo que
 posponerla, y no es un efecto del pospón: es la regla de "una cita que ya pasó
-no compite visualmente con lo urgente". Lo que el pospón hace esAggravar la
+no compite visualmente con lo urgente". Lo que el pospón hace es agravar la
 falta de rastro — te promete un regreso que ninguna lista registra — pero la
 desaparición es previa e independiente.
 
