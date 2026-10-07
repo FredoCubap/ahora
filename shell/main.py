@@ -23,6 +23,7 @@ import socketserver
 import sys
 import threading
 import traceback
+import urllib.parse
 
 try:
     import webview
@@ -114,6 +115,21 @@ def resolve_url(force_dev: bool = False) -> str:
     if not force_dev and (DIST_DIR / "index.html").is_file():
         return _serve_dist(DIST_DIR)
     return DEV_URL
+
+
+def with_theme(url: str, theme: str) -> str:
+    """Agrega `?theme=<valor>` a la URL con la que arranca la ventana.
+
+    El script de `index.html` lo lee antes de que React pinte y pone el tema
+    guardado en `<html>`. Pasarlo por la URL evita el parpadeo de ver primero
+    el tema del sistema: preguntárselo a la base desde JS sería asíncrono, y
+    para entonces la primera pantalla ya se habría pintado. Va antes del `#`
+    del router, así que no interfiere con las rutas.
+    """
+    parts = urllib.parse.urlsplit(url)
+    return urllib.parse.urlunsplit(
+        parts._replace(path=parts.path or "/", query=urllib.parse.urlencode({"theme": theme}))
+    )
 
 
 class Api:
@@ -238,7 +254,7 @@ def _quit_app() -> None:
 def main() -> None:
     db.migrate()
 
-    url = resolve_url(force_dev="--dev" in sys.argv)
+    url = with_theme(resolve_url(force_dev="--dev" in sys.argv), db.get_settings()["theme"])
     # Con `--hidden` (autostart) la app arranca en bandeja sin molestar. Sin
     # él, se muestra normalmente.
     start_hidden = "--hidden" in sys.argv

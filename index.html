@@ -2,6 +2,16 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // El shell abre la ventana con ?theme=<valor> (shell/main.py, with_theme).
+      // Se aplica aquí, antes de que React pinte, para no mostrar un instante
+      // el tema del sistema. Con "sistema" no se fuerza nada.
+      (function () {
+        var theme = new URLSearchParams(location.search).get("theme");
+        if (theme === "claro") document.documentElement.setAttribute("data-theme", "light");
+        else if (theme === "oscuro") document.documentElement.setAttribute("data-theme", "dark");
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ahora</title>
