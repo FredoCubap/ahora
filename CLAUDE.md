@@ -35,7 +35,7 @@ npm run format      # Prettier
 - **`src/lib/pywebviewApi.ts`:** el puente y su interfaz `PywebviewApi`. **`src/lib/db.ts`:** envuelve el puente para los datos (con validación de Zod).
 - **El motor de avisos vive en el frontend** (`src/lib/avisoEngine.ts`, `src/hooks/useAvisoEngine.ts`), no en Python. Python solo notifica cuando se lo piden.
 - **`src/store/useAppStore.ts`:** `refresh()` carga todo y combina los ítems reales con las ocurrencias virtuales de las recurrencias.
-- **`openspec/`:** cambios y specs de OpenSpec.
+- **`openspec/`:** cambios y specs de OpenSpec. Se versiona en este repo: el `.gitignore` tiene una excepción (`!openspec/`) porque la regla global de git de Fredo (`~/.config/git/ignore`) lo ignora en el resto de sus proyectos. No la quites.
 
 ## Convenciones
 

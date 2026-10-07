@@ -35,3 +35,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# OpenSpec se versiona en este repo, aunque la regla global de git
+# (~/.config/git/ignore) lo ignora en el resto de los proyectos.
+!openspec/
