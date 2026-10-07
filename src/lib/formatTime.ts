@@ -11,6 +11,20 @@ export function toLocalIso(d: Date): string {
   )}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 }
 
+const HEADER_DATE = new Intl.DateTimeFormat("es-ES", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+/** "Miércoles, 7 de octubre": mayúscula solo en la primera letra del texto. La
+ * clase CSS `capitalize` no sirve para esto, porque sube cada palabra
+ * ("De Octubre"). */
+export function formatHeaderDate(d: Date): string {
+  const text = HEADER_DATE.format(d);
+  return text.charAt(0).toLocaleUpperCase("es") + text.slice(1);
+}
+
 export function formatHM(iso: string): string {
   const d = new Date(iso);
   return `${d.getHours().toString().padStart(2, "0")}:${d
