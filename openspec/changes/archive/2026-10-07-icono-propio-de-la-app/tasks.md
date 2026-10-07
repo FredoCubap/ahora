@@ -20,4 +20,4 @@
 ## 4. Verificación integrada
 
 - [x] 4.1 Ejecutar `npm run ci` y verificar que queda en verde.
-- [ ] 4.2 Pedir a Fredo que abra la app real, la cierre con la X y confirme a ojo que el ícono de la bandeja (y el de una notificación) es el de Ahora. Si aún se ve el anterior, reiniciar la app antes de darlo por fallido.
+- [x] 4.2 Pedir a Fredo que abra la app real, la cierre con la X y confirme a ojo que el ícono de la bandeja (y el de una notificación) es el de Ahora. Si aún se ve el anterior, reiniciar la app antes de darlo por fallido.
