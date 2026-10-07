@@ -6,12 +6,7 @@ import { ItemRow } from "../components/ItemRow";
 import { BOTTOM_SAFE_AREA } from "../components/BottomNav";
 import { zonifyToday, seguimientoItems } from "../lib/zones";
 import { itemKey } from "../lib/types";
-
-const DATE_LABEL = new Intl.DateTimeFormat("es-ES", {
-  weekday: "long",
-  day: "2-digit",
-  month: "long",
-}).format(new Date());
+import { formatHeaderDate } from "../lib/formatTime";
 
 export function Ahora() {
   const items = useAppStore((s) => s.items);
@@ -56,8 +51,8 @@ export function Ahora() {
           >
             Ahora
           </h1>
-          <div className="text-[13px] capitalize" style={{ color: "var(--ahora-text-muted)" }}>
-            {DATE_LABEL}
+          <div className="text-[13px]" style={{ color: "var(--ahora-text-muted)" }}>
+            {formatHeaderDate(new Date())}
           </div>
         </div>
         <button

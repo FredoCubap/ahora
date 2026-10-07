@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatHM, formatRelative, isSameLocalDay, toLocalIso } from "./formatTime";
+import {
+  formatHeaderDate,
+  formatHM,
+  formatRelative,
+  isSameLocalDay,
+  toLocalIso,
+} from "./formatTime";
 
 /**
  * Tests de formato de fechas.
@@ -27,6 +33,22 @@ describe("toLocalIso", () => {
   it("rellena con ceros", () => {
     const d = new Date(2026, 0, 5, 9, 5, 0);
     expect(toLocalIso(d)).toBe("2026-01-05T09:05:00");
+  });
+});
+
+describe("formatHeaderDate", () => {
+  it("día de un solo dígito, sin cero inicial", () => {
+    expect(formatHeaderDate(new Date(2026, 9, 7))).toBe("Miércoles, 7 de octubre");
+  });
+
+  it("día de dos dígitos", () => {
+    expect(formatHeaderDate(new Date(2026, 9, 15))).toBe("Jueves, 15 de octubre");
+  });
+
+  it("solo la primera letra va en mayúscula (el error histórico: 'De Octubre')", () => {
+    const text = formatHeaderDate(new Date(2026, 9, 7));
+    expect(text).not.toContain(" De ");
+    expect(text).toContain(" de octubre");
   });
 });
 
