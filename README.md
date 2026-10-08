@@ -95,7 +95,19 @@ No es un gestor de proyectos. No es una herramienta de equipo. No es control de 
 
 Lo que falta:
 
-- ⬜ **Instalador.** Por ahora la app se lanza desde el código con `npm run app`. Ver [docs/DESARROLLO.md](docs/DESARROLLO.md#empaquetado).
+- ⬜ **Instalador oficial.** Hay uno de prueba (ver abajo); falta el firmado y publicado.
+
+## Versión de prueba
+
+Si querés instalarla como cualquier programa en vez de correrla desde el código:
+
+```bash
+shell\.venv\Scripts\pip install -r shell\requirements-dev.txt
+npm run package     # empaqueta en build/package/Ahora/Ahora.exe
+npm run installer   # instalador en build/installer/Ahora-Setup-prueba.exe (requiere Inno Setup)
+```
+
+Tres advertencias honestas: **no está firmado** (SmartScreen va a avisar, es esperado), **no es la distribución oficial** (es para probar instalación y desinstalación) y la agenda instalada vive separada en `%LOCALAPPDATA%\Ahora` (no se trae la de desarrollo sola).
 
 ## Probarla
 

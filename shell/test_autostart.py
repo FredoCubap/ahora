@@ -37,4 +37,27 @@ assert f'"{pathlib.Path(__file__).resolve().parent / "main.py"}"' in cmd, cmd
 # 4. Arranca oculto: si no, al iniciar sesión saltaría una ventana de golpe.
 assert "--hidden" in cmd, cmd
 
-print(f"OK: comando de autostart -> {cmd}")
+print(f"   ok  desarrollo: {cmd}")
+
+# 5. Empaquetada: el comando es el ejecutable solo, sin intérprete ni script.
+#    Se simula `sys.frozen` porque este test corre sin congelar; se restaura
+#    en `finally` para no contaminar nada (si quedara puesto, el resto del
+#    proceso creería que está empaquetado).
+_real_frozen = getattr(sys, "frozen", None)
+_real_executable = sys.executable
+sys.frozen = True
+sys.executable = "C:\\Programas\\Ahora\\Ahora.exe"
+try:
+    frozen_cmd = autostart._launch_command()
+finally:
+    if _real_frozen is None:
+        del sys.frozen
+    else:
+        sys.frozen = _real_frozen
+    sys.executable = _real_executable
+
+assert frozen_cmd == '"C:\\Programas\\Ahora\\Ahora.exe" --hidden', frozen_cmd
+assert "pythonw.exe" not in frozen_cmd and "main.py" not in frozen_cmd, frozen_cmd
+print(f"   ok  empaquetada: {frozen_cmd}")
+
+print("OK: comando de autostart en desarrollo y empaquetada")

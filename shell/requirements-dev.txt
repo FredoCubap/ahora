@@ -1,0 +1,10 @@
+# Dependencias de construcción. No van en requirements.txt porque la app en sí
+# no las necesita para correr: solo quien empaqueta (ver el change
+# empaquetar-instalador-de-prueba).
+#
+# Uso:  shell\.venv\Scripts\pip install -r shell\requirements-dev.txt
+
+-r requirements.txt
+
+# Empaquetado del .exe (modo carpeta). Versión fijada: es la que se probó.
+pyinstaller==6.22.3

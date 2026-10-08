@@ -121,7 +121,7 @@ npm run ci shell    # o una sola parte: lint | test | build | shell
 - `test_autostart.py` — el comando de arranque (lo único testeable sin tocar el registro real).
 - `test_tray.py` — que la bandeja tenga lo que necesita y degrade en silencio.
 - `test_serve.py` — que el build se sirva bien (ver `shell/main.py`).
-- `test_quit.py` — que el manejador de cierre distingue la X de "Salir" (ver `shell/main.py`: `_quitting`).
+- `test_quit.py` — que el manejador de cierre esconde la X y deja pasar el sistema (ver `shell/main.py`: `make_close_handler`).
 
 Los que **no** entran en `npm run ci`, porque abren una ventana:
 
@@ -132,7 +132,7 @@ shell\.venv\Scripts\python shell\smoke_quit.py
 
 `smoke_test.py` es el único que comprueba que las piezas están **pegadas**: que pywebview inyectó `window.pywebview.api`, que los nombres de los métodos existen y que los argumentos y retornos hacen el viaje completo. Los otros pueden pasar todos y la app seguir en blanco. Crea un ítem de prueba contra la agenda real y lo borra al final, así que no lo ejecutes sin querer.
 
-`smoke_quit.py` comprueba que `_quit_app()` termina el proceso de verdad: abre una ventana con el manejador de cierre, lo llama desde un hilo y verifica que `webview.start()` vuelve en menos de 15 segundos. Sin la bandera `_quitting` no vuelve: un vigilante lo detecta a los 15 segundos, imprime el fallo y termina con código 1.
+`smoke_quit.py` comprueba que `_quit_app()` termina el proceso de verdad: abre una ventana con el manejador de cierre, lo llama desde un hilo y verifica que `webview.start()` vuelve en menos de 15 segundos. Sin el manejador no vuelve: un vigilante lo detecta a los 15 segundos, imprime el fallo y termina con código 1.
 
 > El smoke test no usa `evaluate_js` para traer resultados, porque no sirve: resuelve la promesa, pero el valor no vuelve (llega un `{}` vacío). En su lugar, el JS pasa cada resultado a `Api.resultado`, un sumidero en Python — que además es la dirección que la app usa de verdad.
 
@@ -146,16 +146,19 @@ Es también la única plataforma sin sorpresas: el shell usa el WebView2 de Wind
 
 ### Empaquetado
 
-**No hay instalador todavía.** No se compila un `.exe` distribuible: la app se lanza desde el código con `npm run app`.
+Hay instalador **de prueba** (no distribución oficial): `npm run package` compila la interfaz y empaqueta la app con PyInstaller (modo carpeta) en `build/package/Ahora/Ahora.exe`; `npm run installer` lo envuelve con Inno Setup en `build/installer/Ahora-Setup-prueba.exe`. Las salidas van a `build/`, ignorado por git.
 
-Lo que falta para llegar ahí, y que conviene saber antes de intentarlo:
+Requiere las dependencias de construcción (PyInstaller no va en el venv de la app):
 
-- [PyInstaller](https://pyinstaller.org) (o similar) para armar el ejecutable.
-- Incluir `assets/icon.ico` y `shell/` en el bundle.
-- Verificar que `pystray` y WebView2 funcionen desde un ejecutable empaquetado, no desde un venv.
-- Decidir si el `.exe` lleva WebView2 embebido (más pesado, funciona en máquinas sin él) o lo da por supuesto (Windows 10/11 ya lo trae).
+```bash
+shell\.venv\Scripts\pip install -r shell\requirements-dev.txt
+```
 
-Es trabajo de verdad, no un comando que falte. Por eso está listado como pendiente y no escondido en un `npm run build`.
+La app empaquetada guarda sus datos en `%LOCALAPPDATA%\Ahora`, no junto al `.exe`: una actualización no borra la agenda. En desarrollo sigue todo igual (`shell/agenda.db`). Para probar sin tocar nada real, `AHORA_DATA_DIR` apunta los datos a otra carpeta.
+
+Si venís de desarrollo y querés llevarte tu agenda a la instalada, copiá `shell/agenda.db` a `%LOCALAPPDATA%\Ahora\agenda.db` a mano (no hay migración automática, a propósito).
+
+El instalador no está firmado: SmartScreen va a avisar. Es esperado en una versión de prueba.
 
 ## Estrategia de ramas por plataforma
 

@@ -22,6 +22,7 @@ import pathlib
 import socketserver
 import sys
 import threading
+import time
 import traceback
 import urllib.parse
 
@@ -49,24 +50,27 @@ except ImportError:
 
 import autostart
 import db
+import paths
 import recurrence
 import tray as tray_mod
 
 APP_NAME = "Ahora"
 
-# El build de Vite y el puerto del dev server.
-DIST_DIR = pathlib.Path(__file__).resolve().parent.parent / "dist"
+# El build de Vite (un recurso: lo ubica `paths`) y el puerto del dev server.
+DIST_DIR = paths.RESOURCE_DIR / "dist"
 DEV_URL = "http://localhost:1420"
 
 WINDOW_WIDTH = 480
 WINDOW_HEIGHT = 800
 
-# Bandera que distingue "la app quiere terminar" de "el usuario pulsó la X".
-# Ambos llegan como el mismo evento `closing`, y el manejador de la X lo
-# cancela siempre — así que sin esto, `window.destroy()` desde "Salir" también
-# se cancela y el proceso no termina nunca. `_quit_app()` la levanta antes de
-# destruir; el manejador la mira y deja pasar el cierre. No hace falta bajarla:
-# tras levantarla el proceso termina.
+# Bandera que distingue "la app quiere terminar" de "la X".
+#
+# Hace falta aunque el manejador mire `CloseReason`: `destroy()` desde otro
+# hilo (es como lo llama "Salir", vía `Invoke`) llega con motivo `UserClosing`
+# igual que la X — verificado con traza (reason=UserClosing en un `destroy()`
+# programático). Sin la bandera no hay forma de distinguirlos.
+# `_quit_app()` la levanta antes de destruir; no hace falta bajarla porque tras
+# levantarla el proceso termina.
 _quitting = threading.Event()
 
 
@@ -251,13 +255,16 @@ def _quit_app() -> None:
 
     Destruir la última ventana es lo que hace que `webview.start()` vuelva y
     el proceso termine — por eso "Salir" sí cierra de verdad y la X no.
-
-    Ojo: `destroy()` no es un cierre a la fuerza, pasa por el evento `closing`
-    y por lo tanto por el manejador de la X, que lo cancelaría. Por eso se
-    levanta `_quitting` antes: sin la bandera, "Salir" escondería la ventana
-    y el proceso seguiría vivo.
+    Levanta `_quitting` antes (ver la bandera): `destroy()` llega con motivo
+    `UserClosing` igual que la X, y sin la bandera "Salir" escondería en vez
+    de terminar.
     """
     _quitting.set()
+    for window in list(webview.windows):
+        try:
+            window.destroy()
+        except Exception:
+            pass
     for window in list(webview.windows):
         try:
             window.destroy()
@@ -269,32 +276,166 @@ def make_close_handler(window):
     """Construye el manejador de cierre para una ventana.
 
     Es función de módulo (y no un cierre anidado en `main()`) para poder
-    probarla con una ventana falsa: `shell/test_quit.py` lo hace sin abrir
-    nada.
+    probarla sin abrir nada: `shell/test_quit.py` lo hace con motivos
+    simulados.
 
-    La X esconde la ventana en vez de cerrar la app. Devolver False cancela el
-    cierre (así está modelado `events.closing` en pywebview: el handler cancela
-    cuando devuelve False). Sin esto, cerrar la ventana mataría el proceso y
-    con él el motor de avisos — la app dejaría de avisar sin que nadie se
-    entere.
+    Un solo manejador con la razón a la vista (`CloseReason`), suscripto
+    directo al Form (ver `subscribe_system_close`): la X esconde, "Salir"
+    termina, el sistema pasa. Tres detalles que costó aprender:
 
-    Pero cuando la app está saliendo (`_quitting` levantada por `_quit_app`),
-    el manejador no esconde nada y devuelve True: el cierre sigue, la última
-    ventana se destruye y `webview.start()` vuelve. Sin esta distinción,
-    `destroy()` pasaría por este mismo manejador, se cancelaría, y "Salir" no
-    terminaría el proceso nunca.
+    - NO va por `window.events.closing` de pywebview: suscribir ahí (aunque el
+      manejador devuelva lo que sea) hace que Windows vete WM_QUERYENDSESSION,
+      y ni el instalador ni el apagado pueden cerrar la app. Verificado con
+      sonda Win32: sin esa suscripción la query se acepta, con ella se veta.
+    - "Salir" necesita la bandera `_quitting` ADEMÁS de la razón: `destroy()`
+      desde otro hilo llega con motivo `UserClosing` igual que la X
+      (verificado con traza). Sin la bandera no hay forma de distinguirlos.
+    - `CloseMainWindow` de PowerShell (y el "Finalizar tarea") llega como
+      `TaskManagerClosing`, no como `UserClosing`: también pasa, que es lo
+      correcto. Para simular la X de verdad hay que mandar `WM_SYSCOMMAND` con
+      `SC_CLOSE`.
     """
+    try:
+        import clr  # noqa: F401 -- sin esto `System` no existe
 
-    def on_closing() -> bool:
-        if _quitting.is_set():
-            return True
-        window.hide()
+        clr.AddReference("System.Windows.Forms")
+        from System.Windows.Forms import CloseReason
+    except Exception:
+        # Sin WinForms no hay nada que suscribir (y sin runtime ni siquiera
+        # hay veto que arreglar): la app arranca igual, sin este manejo.
+        return None
+
+    def on_form_closing(sender, args):
+        if _quitting.is_set() or args.CloseReason != CloseReason.UserClosing:
+            args.Cancel = False
+        else:
+            window.hide()
+            args.Cancel = True
+
+    return on_form_closing
+
+
+def _try_subscribe(window, handler) -> bool:
+    """Un intento de suscribir `handler` al Form real. False si todavía no se
+    puede (sin Form, sin handle) o si falla.
+
+    Suscribirse (`+=`) desde otro hilo es seguro: `EventHandlerList.Add` tiene
+    lock propio. Lo que NO se puede desde otro hilo es invocar controles — por
+    eso esto solo suscribe; el manejador lo invoca .NET en el hilo de la UI
+    cuando el cierre ocurre. (Se probó derivar con `Invoke`, pero invocar un
+    delegado de pythonnet a mano revienta el proceso; suscribir directo anda.)
+    """
+    try:
+        form = window.native
+    except Exception:
+        return False
+    if form is None:
+        return False
+    try:
+        if not form.IsHandleCreated:
+            return False
+    except Exception:
+        return False
+    try:
+        form.FormClosing += handler
+        return True
+    except Exception:
         return False
 
-    return on_closing
+
+def subscribe_system_close(window, timeout_s: float = 30.0) -> bool:
+    """Suscribe el cierre con razón al Form real. Para probar sin ventana, ver
+    `test_quit.py` (la lógica vive en `make_close_handler` y el reintento en
+    `_try_subscribe`).
+
+    El Form (`window.native`) lo crea `webview.start()` en el hilo de la UI,
+    que todavía no existe cuando `main()` arma la ventana — por eso esto corre
+    en un hilo aparte que reintenta hasta que el Form y su handle existen (con
+    tope, para no girar para siempre si la ventana nunca se crea). Cubre
+    arranques ocultos (`--hidden`) igual que visibles: el Form existe en
+    ambos, se muestre o no.
+    """
+    handler = make_close_handler(window)
+    if handler is None:
+        return False
+
+    def watch() -> None:
+        # Se espera al Form Y a su handle: `window.native` se asigna al
+        # principio del constructor, antes de que la ventana exista de verdad.
+        # Sin esta espera la suscripción pierde la carrera a veces sí y a
+        # veces no, y el veto vuelve de forma intermitente — que es
+        # exactamente lo que se vio probando: funciona una vez, falla la
+        # siguiente, sin cambiar nada.
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            if _try_subscribe(window, handler):
+                return
+            time.sleep(0.1)
+
+    threading.Thread(target=watch, daemon=True).start()
+    return True
+
+
+# Se guarda el handle para que viva lo que viva el proceso: si se cerrara, el
+# mutex se liberaría y una segunda instancia pasaría.
+_single_instance_mutex = []
+
+
+def ensure_single_instance(data_dir=None) -> bool:
+    """True si esta es la única instancia, False si ya hay otra corriendo.
+
+    Un mutex con nombre del kernel: la primera lo crea y lo mantiene; la
+    segunda lo encuentra ocupado y termina en silencio antes de tocar nada (ni
+    ventana, ni bandeja, ni base). Sin esto, abrir el `.exe` dos veces (fácil
+    cuando la X esconde a bandeja y se olvida) duplica iconos y avisos.
+
+    El nombre deriva de `DATA_DIR`: dos procesos con la misma agenda se
+    excluyen, pero desarrollo e instalada (distinta agenda) pueden convivir —
+    si no, probar la instalada con el dev abierto fallaría en silencio y
+    parecería que el instalador no anda. El mutex muere con el proceso, así
+    que un cuelgue no deja nada trabado.
+
+    `data_dir` solo existe para probar con un directorio falso; en la app
+    siempre es `paths.DATA_DIR`.
+
+    Si algo falla (no Windows, sin permisos), se deja pasar: duplicar es
+    molesto, no arrancar es peor.
+    """
+    try:
+        import ctypes
+        import hashlib
+
+        if sys.platform != "win32":
+            return True
+        base = str(data_dir) if data_dir is not None else str(paths.DATA_DIR)
+        name = "Local\\AhoraSingleInstance-" + hashlib.sha1(
+            base.encode("utf-8")
+        ).hexdigest()[:12]
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.CreateMutexW(None, False, name)
+        if not handle:
+            return True
+        # 183 = ERROR_ALREADY_EXISTS: otra instancia lo creó antes.
+        if kernel32.GetLastError() == 183:
+            kernel32.CloseHandle(handle)
+            return False
+        _single_instance_mutex.append(handle)
+        return True
+    except Exception:
+        return True
 
 
 def main() -> None:
+    # Segunda instancia: termina en silencio con código 0 (no es un error, no
+    # hay nada que reportar y en modo ventana ni siquiera hay consola que lea
+    # un mensaje). Va antes de todo: no toca ni la base.
+    if not ensure_single_instance():
+        return
+
+    # La carpeta de datos puede no existir (primer arranque instalada): se crea
+    # antes de migrar, porque si no `sqlite3.connect` falla. En desarrollo ya
+    # existe (`shell/`) y esto no hace nada.
+    paths.DATA_DIR.mkdir(parents=True, exist_ok=True)
     db.migrate()
 
     url = with_theme(resolve_url(force_dev="--dev" in sys.argv), db.get_settings()["theme"])
@@ -318,7 +459,11 @@ def main() -> None:
         js_api=Api(tray),
     )
 
-    window.events.closing += make_close_handler(window)
+    # El cierre con razón (la X esconde, el sistema y "Salir" pasan): corre en
+    # un hilo que espera al Form real (ver función). A propósito NO se usa
+    # `window.events.closing` de pywebview: suscribir ahí veta WM_QUERYENDSESSION
+    # y ni el instalador ni el apagado pueden cerrar la app.
+    subscribe_system_close(window)
 
     # El ícono de bandeja corre en su propio hilo, porque `webview.start()`
     # ocupa el principal hasta que la app termina. Si no se puede levantar
@@ -341,7 +486,7 @@ if __name__ == "__main__":
     except Exception:
         # Si pywebview no puede arrancar (no hay WebView2, falta una DLL), el
         # traceback en una consola que nadie ve no sirve de nada: se escribe
-        # en un archivo al lado del script.
-        with open(pathlib.Path(__file__).parent / "crash.log", "w", encoding="utf-8") as f:
+        # en un archivo en la carpeta de datos, al lado de la agenda.
+        with open(paths.DATA_DIR / "crash.log", "w", encoding="utf-8") as f:
             f.write(traceback.format_exc())
         raise

@@ -12,3 +12,9 @@ pywebview==6.2.1
 pystray==0.19.5
 # pystray necesita Pillow para leer assets/icon.ico.
 Pillow==12.3.0
+
+# Fijadas porque pywebview las trae sin fijar y el build debe ser reproducible
+# (ver el change empaquetar-instalador-de-prueba). Son las que hoy tiene el
+# entorno del proyecto (`pip freeze`).
+pythonnet==3.1.0
+clr_loader==0.3.1

@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime, timedelta
-from pathlib import Path
+
+import paths
 
 # Esquema de la app. Son las mismas tablas que describe docs/FILOSOFIA.md
 # ("Esquema de datos"), con una desviación deliberada: `item.snoozed_until` no
@@ -11,7 +12,10 @@ from pathlib import Path
 # Las migraciones son append-only: cada una suma algo nuevo y nunca se edita
 # una vieja, porque la DB de quien ya usó la app tiene `user_version` = N y solo
 # corre las que falten.
-DB_PATH = Path(__file__).parent / "agenda.db"
+# La base va donde diga `paths`: `shell/agenda.db` en desarrollo,
+# `%LOCALAPPDATA%\Ahora` empaquetada. Sigue siendo variable de módulo (no
+# constante) porque `test_db.py` la sobrescribe para usar una DB temporal.
+DB_PATH = paths.DATA_DIR / "agenda.db"
 
 SCHEMA_V1 = """
 CREATE TABLE item (
