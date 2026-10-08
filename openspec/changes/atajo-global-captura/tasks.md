@@ -14,10 +14,10 @@
 
 ## 3. Frontend
 
-- [ ] 3.1 En `src/lib/types.ts`, añadir `hotkey_enabled` y `hotkey_combination` a `settingsSchema` y actualizar los `Settings` de prueba.
-- [ ] 3.2 En `src/lib/pywebviewApi.ts` y `src/lib/system.ts`, añadir `configure_hotkey`, `get_hotkey_status` y `captura_closed`.
-- [ ] 3.3 En `src/App.tsx`, abrir la captura al recibir `ahora:captura` y avisar al shell al cerrarla. En `CapturaModal.tsx`, cerrar con `Escape`.
-- [ ] 3.4 En `src/routes/Ajustes.tsx`, añadir el toggle y el campo de combinación con el motivo si está inactivo, siguiendo el patrón del autostart. Test de vitest de la lógica pura del estado mostrado.
+- [x] 3.1 En `src/lib/types.ts`, añadir `hotkey_enabled` y `hotkey_combination` a `settingsSchema` y actualizar los `Settings` de prueba.
+- [x] 3.2 En `src/lib/pywebviewApi.ts` y `src/lib/system.ts`, añadir `configure_hotkey`, `get_hotkey_status` y `captura_closed`.
+- [x] 3.3 En `src/App.tsx`, abrir la captura al recibir `ahora:captura` y avisar al shell al cerrarla. En `CapturaModal.tsx`, cerrar con `Escape`.
+- [x] 3.4 En `src/routes/Ajustes.tsx`, añadir el toggle y el campo de combinación con el motivo si está inactivo, siguiendo el patrón del autostart. Test de vitest de la lógica pura del estado mostrado.
 
 ## 4. Verificación integrada
 
