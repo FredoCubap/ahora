@@ -186,6 +186,9 @@ export function CapturaModal({ isOpen, onClose }: CapturaModalProps) {
       className="fixed inset-0 flex items-center justify-center p-6 z-50"
       style={{ background: "rgba(0,0,0,0.35)" }}
       onClick={handleCancel}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") handleCancel();
+      }}
     >
       <div
         className="flex flex-col gap-4 w-full max-w-[400px] max-h-[85vh] overflow-y-auto rounded-3xl p-5"

@@ -224,7 +224,11 @@ CREATE TABLE settings (
   -- Tema de la interfaz. Se guarda aquí (y no en localStorage) para que
   -- sobreviva a los reinicios; 'sistema' sigue al tema del sistema operativo.
   theme         TEXT NOT NULL DEFAULT 'sistema'
-                CHECK (theme IN ('claro','oscuro','sistema'))
+                CHECK (theme IN ('claro','oscuro','sistema')),
+
+  -- Atajo global que abre la captura rápida desde cualquier aplicación.
+  hotkey_enabled     INTEGER NOT NULL DEFAULT 1 CHECK (hotkey_enabled IN (0,1)),
+  hotkey_combination TEXT NOT NULL DEFAULT 'Win+Alt+A'
 );
 ```
 
