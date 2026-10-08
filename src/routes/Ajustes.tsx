@@ -3,7 +3,14 @@ import { useAppStore } from "../store/useAppStore";
 import { Header } from "../components/Header";
 import { useTheme } from "../hooks/useTheme";
 import { ThemeChoice } from "../lib/types";
-import { getAutostart, quitApp, setAutostart } from "../lib/system";
+import {
+  configureHotkey,
+  getAutostart,
+  getHotkeyStatus,
+  quitApp,
+  setAutostart,
+} from "../lib/system";
+import { HotkeyStatus, hotkeyMessage } from "../lib/hotkey";
 
 const DAY_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
 
@@ -69,6 +76,23 @@ export function Ajustes() {
     setAutostartState(await setAutostart(!autostart));
   }
 
+  // Atajo global (shell/hotkey.py). Lo guardado vive en `settings`; el estado
+  // real (activo / ocupado) solo lo sabe el shell. El borrador de la combinación
+  // sigue la misma idea que `useNumberField`: no se aplica en cada tecla, sino
+  // al salir del campo.
+  const [hotkeyStatus, setHotkeyStatus] = useState<HotkeyStatus | null>(null);
+  const [hotkeyDraft, setHotkeyDraft] = useState<string | null>(null);
+  useEffect(() => {
+    void getHotkeyStatus().then(setHotkeyStatus);
+  }, []);
+
+  async function applyHotkey(enabled: boolean, combination: string) {
+    const result = await configureHotkey(enabled, combination);
+    setHotkeyDraft(null);
+    if (result) setHotkeyStatus({ active: result.active, reason: result.reason });
+    await refresh();
+  }
+
   // Deben llamarse siempre, en el mismo orden, en cada render — por eso van
   // antes del `if (!settings) return null` de abajo (reglas de los Hooks).
   // Mientras `settings` todavía no cargó, usan un valor de respaldo que se
@@ -101,6 +125,10 @@ export function Ajustes() {
   if (!settings) return null;
 
   const completedCount = items.filter((i) => i.status === "hecha" || i.status === "saltada").length;
+
+  const hotkeyEnabled = settings.hotkey_enabled === 1;
+  const hotkeyCombination = settings.hotkey_combination;
+  const hotkeyNote = hotkeyMessage(hotkeyEnabled, hotkeyStatus);
 
   const activeDays = new Set(settings.work_days.split(",").map((s) => parseInt(s.trim(), 10)));
 
@@ -328,6 +356,61 @@ export function Ajustes() {
             />
           </div>
         </button>
+        <div className="flex flex-col rounded-2xl" style={{ background: "var(--ahora-chip-bg)" }}>
+          <button
+            onClick={() => void applyHotkey(!hotkeyEnabled, hotkeyCombination)}
+            className="flex items-center justify-between px-4 py-3.5"
+            style={{ borderBottom: "1px solid var(--ahora-border)" }}
+          >
+            <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
+              Atajo global para capturar
+            </div>
+            <div
+              className="rounded-full flex-shrink-0 flex"
+              style={{
+                width: 34,
+                height: 20,
+                padding: 2,
+                background: hotkeyEnabled ? "var(--ahora-accent)" : "var(--ahora-border)",
+                justifyContent: hotkeyEnabled ? "flex-end" : "flex-start",
+                transition: "background 0.15s",
+              }}
+            >
+              <div
+                className="rounded-full"
+                style={{ width: 16, height: 16, background: "var(--ahora-bg-elevated)" }}
+              />
+            </div>
+          </button>
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <div className="text-sm" style={{ color: "var(--ahora-text)" }}>
+              Combinación
+            </div>
+            <input
+              value={hotkeyDraft ?? hotkeyCombination}
+              onChange={(e) => setHotkeyDraft(e.target.value)}
+              onBlur={() => {
+                if (hotkeyDraft !== null && hotkeyDraft !== hotkeyCombination) {
+                  void applyHotkey(hotkeyEnabled, hotkeyDraft.trim());
+                } else {
+                  setHotkeyDraft(null);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+              aria-label="Combinación del atajo global"
+              spellCheck={false}
+              className="w-32 text-right text-sm bg-transparent outline-none"
+              style={{ color: "var(--ahora-text-muted)" }}
+            />
+          </div>
+          {hotkeyNote && (
+            <div className="px-4 pb-3.5 text-xs" style={{ color: "var(--ahora-text-faint)" }}>
+              {hotkeyNote}
+            </div>
+          )}
+        </div>
         <button
           onClick={() => void quitApp()}
           className="flex items-center justify-between rounded-2xl px-4 py-3.5"
