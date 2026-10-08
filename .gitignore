@@ -16,6 +16,12 @@ dist
 dist-ssr
 *.local
 
+# Salidas de empaquetado: los binarios viven solo en la máquina que los
+# construye, nunca en git (un .exe en el historial lo infla para siempre).
+# Se distribuyen por fuera (USB, carpeta compartida, Drive).
+build/
+*.exe
+
 # Logs
 logs
 *.log
