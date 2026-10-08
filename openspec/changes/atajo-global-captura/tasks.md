@@ -8,8 +8,8 @@
 
 ## 2. Atajo en el shell
 
-- [ ] 2.1 Crear `shell/hotkey.py` con `parse_combination`, la clase del atajo (hilo con bucle de mensajes, `start`, `stop`, estado con motivo) y degradación en silencio si no es Windows o el atajo está ocupado.
-- [ ] 2.2 Crear `shell/test_hotkey.py`: parseo válido e inválido, y registro, desregistro y atajo ocupado con el módulo de Windows simulado. Verificar con `npm run ci shell`.
+- [x] 2.1 Crear `shell/hotkey.py` con `parse_combination`, la clase del atajo (hilo con bucle de mensajes, `start`, `stop`, estado con motivo) y degradación en silencio si no es Windows o el atajo está ocupado.
+- [x] 2.2 Crear `shell/test_hotkey.py`: parseo válido e inválido, y registro, desregistro y atajo ocupado con el módulo de Windows simulado. Verificar con `npm run ci shell`.
 - [ ] 2.3 En `shell/main.py`: arrancar el atajo con los ajustes guardados, traer la ventana al frente y disparar `ahora:captura`, llevar la bandera de ventana escondida, y exponer `configure_hotkey`, `get_hotkey_status` y `captura_closed` en `Api`. Probar la lógica de estado previo en un test con ventana falsa.
 
 ## 3. Frontend
