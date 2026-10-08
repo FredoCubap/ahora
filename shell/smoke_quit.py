@@ -1,13 +1,13 @@
 """Smoke test de salida: python smoke_quit.py
 
-Abre una ventana de verdad con el manejador de cierre de la app y comprueba
-que `_quit_app()` termina el proceso: `webview.start()` tiene que volver en
-menos de 15 segundos.
+Abre una ventana de verdad con el mismo cableado de cierre que la app
+(`main.subscribe_system_close`) y comprueba que `_quit_app()` termina el
+proceso: `webview.start()` tiene que volver en menos de 15 segundos.
 
 `webview.start()` bloquea hasta que se cierra la última ventana, así que si el
-arreglo se rompe (el manejador de la X cancelando también el cierre de
-"Salir") nunca vuelve y el script se quedaría esperando para siempre. Por eso
-hay un vigilante: a los 15 segundos imprime el fallo y termina con código 1.
+arreglo se rompe (el manejador vetando también el cierre de "Salir") nunca
+vuelve y el script se quedaría esperando para siempre. Por eso hay un
+vigilante: a los 15 segundos imprime el fallo y termina con código 1.
 
 Abre una ventana, así que es manual y no entra en `npm run ci` (igual que
 `smoke_test.py`). No toca la base de datos: la página es un HTML mínimo, no la
@@ -44,11 +44,15 @@ def _abortar() -> None:
 
 def run() -> int:
     window = webview.create_window("Ahora · smoke quit", html="<h1>smoke quit</h1>")
-    window.events.closing += main.make_close_handler(window)
+    # El mismo cableado que `main()`: sin esto no hay manejador y el test no
+    # probaría nada (sin veto, cualquier cierre pasa).
+    main.subscribe_system_close(window)
 
     # "_quit_app() desde un hilo" es lo que pasa en la app real: el menú de la
-    # bandeja corre en el hilo de pystray, no en el de la ventana.
-    threading.Timer(2.0, main._quit_app).start()
+    # bandeja corre en el hilo de pystray, no en el de la ventana. Se espera a
+    # que la página cargue antes: destruir en plena inicialización de WebView2
+    # cuelga el cierre y el test mediría eso en vez del manejador.
+    window.events.loaded += lambda: threading.Timer(1.0, main._quit_app).start()
 
     vigilante = threading.Timer(TIMEOUT_S, _abortar)
     vigilante.daemon = True

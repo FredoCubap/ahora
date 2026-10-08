@@ -45,6 +45,9 @@ Permite probar la app empaquetada, o probarla en una máquina de pruebas, sin to
 **7. El empaquetado no entra en `npm run ci`.**
 Es lento y necesita herramientas externas. Lo que sí entra es `test_paths.py`.
 
+**8. El instalador mata la app antes de tocar archivos (taskkill), además del cierre elegante.**
+El cierre elegante vía Restart Manager a veces no termina la app (el teardown de WebView2 se cuelga de forma intermitente: verificado tres veces con log de Inno) y sin red de seguridad la instalación se clava en el diálogo de "no pudo cerrar" o el desinstalador deja archivos bloqueados huérfanos (reproducido: 31 archivos sin desinstalador). El taskkill va en `ssInstall` y `usUninstall`, antes que Restart Manager. No hay estado sin guardar que perder: todo va a SQLite al momento, igual que matar desde el Administrador de tareas.
+
 ## Risks / Trade-offs
 
 - [`pythonnet` 3.1.0 congelado no se ha probado] → Es la primera tarea de empaquetado; si falla, la alternativa es fijar 3.2.0 (la que ya funcionó) y actualizar el pin.

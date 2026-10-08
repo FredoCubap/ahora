@@ -9,7 +9,12 @@
 ; Requiere Inno Setup 6+ en la máquina (no es dependencia del repo).
 
 #define MyAppName "Ahora"
-#define MyAppVersion "0.0.0-prueba"
+; La versión la pasa `npm run installer` con /D. El #ifndef es obligatorio:
+; un #define pelado pisaría el valor de la línea de comandos (ISCC procesa
+; los /D primero, y la última definición gana).
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0-prueba"
+#endif
 #define MyAppPublisher "FredoCubap"
 #define MyOutputBaseFilename "Ahora-Setup-prueba"
 
@@ -58,3 +63,30 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 [Run]
 ; Abrirla al terminar de instalar, sin elevar.
 Filename: "{app}\Ahora.exe"; Description: "Abrir Ahora"; Flags: nowait postinstall skipifsilent shellexec
+
+[Code]
+// Si la app sigue corriendo al instalar o desinstalar (fácil: la X la esconde
+// en vez de cerrarla), se la termina a la fuerza antes de tocar archivos. El
+// cierre elegante vía Restart Manager a veces no la termina (el teardown de
+// WebView2 se cuelga de forma intermitente) y sin esto la instalación se clava
+// en el diálogo de "no pudo cerrar" o el desinstalador deja archivos
+// bloqueados huérfanos. No hay estado sin guardar que perder: todo va a
+// SQLite al momento (igual que matar desde el Administrador de tareas).
+procedure KillApp();
+var
+  ResultCode: Integer;
+begin
+  Exec('taskkill.exe', '/F /IM Ahora.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then
+    KillApp();
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usUninstall then
+    KillApp();
+end;

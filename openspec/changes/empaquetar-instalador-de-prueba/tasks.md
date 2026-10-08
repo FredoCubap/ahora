@@ -28,3 +28,14 @@
 - [ ] 5.1 Instalar `Ahora-Setup-prueba.exe` en una máquina o entorno limpio (Windows Sandbox o una VM) con un usuario sin permisos de administrador. Verificar: instala sin pedir credenciales, abre con el ícono propio, y la agenda se crea en `%LOCALAPPDATA%\Ahora`.
 - [ ] 5.2 En ese entorno verificar que la X esconde en la bandeja, que "Salir" termina sin dejar procesos, que el inicio automático activado reabre la app oculta tras reiniciar, y que una notificación del sistema aparece. Anotar si WebView2 hacía falta.
 - [ ] 5.3 Instalar una segunda vez encima con la app abierta y verificar que se cierra y se actualiza conservando los ítems. Desinstalar y verificar que desaparece la carpeta de instalación y la entrada de inicio automático, y que la agenda sigue en `%LOCALAPPDATA%\Ahora`.
+
+## 6. Instancia única y cierre del sistema (hallazgos del grupo 5)
+
+Al probar en máquina real aparecieron dos agujeros del ciclo de vida con la app instalada:
+
+- Abrir el `.exe` dos veces crea dos procesos (X escondida + olvido de la bandeja = N iconos y avisos duplicados; se vieron 106). Nada lo impedía.
+- Desinstalar o reinstalar con la app corriendo (escondida) falla: el manejador de cierre veta TODO cierre que no sea la X, incluido el que pide el instalador al actualizar y el que pide Windows al apagar. Reproducido: desinstalar deja 31 archivos huérfanos sin desinstalador, y reinstalar muestra el diálogo de "no pudo cerrar las aplicaciones".
+
+- [x] 6.1 En `shell/main.py`, impedir la segunda instancia con un mutex con nombre (`Local\...`, derivado de `DATA_DIR` para que desarrollo e instalada puedan convivir pero dos iguales no). La segunda termina en silencio antes de tocar nada. Verificar lanzando el `.exe` dos veces: un solo proceso.
+- [x] 6.2 En `shell/main.py`, dejar pasar los cierres que no son del usuario: un manejador `FormClosing` sobre `window.native` que pone `Cancel = False` cuando `CloseReason != UserClosing` (apagado, reinicio, instalador). La X sigue escondiendo igual. Verificar reinstalando y desinstalando con la app corriendo: sin diálogo de error y sin archivos huérfanos.
+- [x] 6.3 Tests: `test_quit.py` cubre el manejador con `CloseReason` simulado (sistema pasa, usuario cancela); `test_single.py` cubre que la segunda instancia termina. Verificar con `npm run ci shell`.

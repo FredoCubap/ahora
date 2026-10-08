@@ -49,7 +49,7 @@ if (!iscc) {
 }
 
 if (
-  spawnSync(`"${iscc}" /DMyAppVersion="${version}" "${ISS}"`, {
+  spawnSync(`"${iscc}" /DMyAppVersion=${version} "${ISS}"`, {
     cwd: ROOT,
     shell: true,
     stdio: "inherit",

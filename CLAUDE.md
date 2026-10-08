@@ -51,7 +51,7 @@ npm run format      # Prettier
 - **Lanzar la ventana desde Bash la mata al instante.** Lánzala con PowerShell `Start-Process`, o desde una terminal normal con `npm run app`.
 - **Si existe `dist/`, `npm run app` sirve ese build viejo** y el hot-reload no se ve. Para desarrollar usa `npm run app:dev`.
 - **La X de la ventana la esconde, no cierra la app:** sigue viva en bandeja con el motor de avisos. Lo único que termina el proceso es "Salir" (la bandeja o Ajustes). Si la app no arranca, el traceback queda en `shell/crash.log`.
-- **`window.destroy()` dispara `closing`:** el manejador de la X lo cancela salvo que `_quitting` esté levantada (la levanta `_quit_app()` en `shell/main.py`). Sin la bandera, "Salir" esconde la ventana y el proceso sigue vivo.
+- **`window.destroy()` pasa por `FormClosing`:** el manejador (`make_close_handler` en `shell/main.py`) esconde solo la X (`CloseReason.UserClosing`) y deja pasar todo lo demás. Suscribir por `window.events.closing` de pywebview veta `WM_QUERYENDSESSION`: no hacerlo nunca.
 - **Las rutas se piden a `shell/paths.py`, nunca con `__file__`.** `RESOURCE_DIR` (solo lectura: `dist/`, `assets/`) y `DATA_DIR` (lo que se escribe: agenda, `crash.log`) cambian entre desarrollo y empaquetado. Calcular una ruta a mano rompe el `.exe`.
 - **`evaluate_js` no devuelve el valor resuelto** de una promesa (llega `{}`). Para comprobar el puente de punta a punta, mira cómo lo resuelve `shell/smoke_test.py`.
 - **El pywebview 6.2.1 tiene rota la ruta `/` de su servidor local.** Por eso `main.py` sirve `dist/` con un servidor propio de la stdlib. No lo cambies sin probarlo.

@@ -121,7 +121,7 @@ npm run ci shell    # o una sola parte: lint | test | build | shell
 - `test_autostart.py` — el comando de arranque (lo único testeable sin tocar el registro real).
 - `test_tray.py` — que la bandeja tenga lo que necesita y degrade en silencio.
 - `test_serve.py` — que el build se sirva bien (ver `shell/main.py`).
-- `test_quit.py` — que el manejador de cierre distingue la X de "Salir" (ver `shell/main.py`: `_quitting`).
+- `test_quit.py` — que el manejador de cierre esconde la X y deja pasar el sistema (ver `shell/main.py`: `make_close_handler`).
 
 Los que **no** entran en `npm run ci`, porque abren una ventana:
 
@@ -132,7 +132,7 @@ shell\.venv\Scripts\python shell\smoke_quit.py
 
 `smoke_test.py` es el único que comprueba que las piezas están **pegadas**: que pywebview inyectó `window.pywebview.api`, que los nombres de los métodos existen y que los argumentos y retornos hacen el viaje completo. Los otros pueden pasar todos y la app seguir en blanco. Crea un ítem de prueba contra la agenda real y lo borra al final, así que no lo ejecutes sin querer.
 
-`smoke_quit.py` comprueba que `_quit_app()` termina el proceso de verdad: abre una ventana con el manejador de cierre, lo llama desde un hilo y verifica que `webview.start()` vuelve en menos de 15 segundos. Sin la bandera `_quitting` no vuelve: un vigilante lo detecta a los 15 segundos, imprime el fallo y termina con código 1.
+`smoke_quit.py` comprueba que `_quit_app()` termina el proceso de verdad: abre una ventana con el manejador de cierre, lo llama desde un hilo y verifica que `webview.start()` vuelve en menos de 15 segundos. Sin el manejador no vuelve: un vigilante lo detecta a los 15 segundos, imprime el fallo y termina con código 1.
 
 > El smoke test no usa `evaluate_js` para traer resultados, porque no sirve: resuelve la promesa, pero el valor no vuelve (llega un `{}` vacío). En su lugar, el JS pasa cada resultado a `Api.resultado`, un sumidero en Python — que además es la dirección que la app usa de verdad.
 
