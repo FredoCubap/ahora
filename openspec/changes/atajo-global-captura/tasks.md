@@ -2,9 +2,9 @@
 
 ## 1. Base de datos
 
-- [ ] 1.1 En `shell/db.py`, añadir `SCHEMA_V4` (`hotkey_enabled` y `hotkey_combination` en `settings`, con sus defaults y `CHECK`) y agregarlo al final de `MIGRATIONS`, sin editar los anteriores. Verificar con `npm run ci shell`.
-- [ ] 1.2 En `shell/test_db.py`, comprobar que una base en la versión 3 con datos sube a la 4 sin perder nada y con el atajo activo en `Win+Alt+A`, y que `hotkey_enabled = 2` lanza `sqlite3.IntegrityError`. Verificar que usa directorio temporal.
-- [ ] 1.3 Añadir las dos columnas a la tabla `settings` del esquema de `docs/FILOSOFIA.md`.
+- [x] 1.1 En `shell/db.py`, añadir `SCHEMA_V4` (`hotkey_enabled` y `hotkey_combination` en `settings`, con sus defaults y `CHECK`) y agregarlo al final de `MIGRATIONS`, sin editar los anteriores. Verificar con `npm run ci shell`.
+- [x] 1.2 En `shell/test_db.py`, comprobar que una base en la versión 3 con datos sube a la 4 sin perder nada y con el atajo activo en `Win+Alt+A`, y que `hotkey_enabled = 2` lanza `sqlite3.IntegrityError`. Verificar que usa directorio temporal.
+- [x] 1.3 Añadir las dos columnas a la tabla `settings` del esquema de `docs/FILOSOFIA.md`.
 
 ## 2. Atajo en el shell
 

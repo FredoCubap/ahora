@@ -102,7 +102,15 @@ SCHEMA_V3 = """
 ALTER TABLE settings ADD COLUMN theme TEXT NOT NULL DEFAULT 'sistema'
   CHECK (theme IN ('claro','oscuro','sistema'));
 """
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3]
+# Atajo global para abrir la captura rápida (shell/hotkey.py). Activo por
+# defecto: es la función; el usuario lo apaga o cambia la combinación en
+# Ajustes. Las bases existentes lo estrenan con `Win+Alt+A`.
+SCHEMA_V4 = """
+ALTER TABLE settings ADD COLUMN hotkey_enabled INTEGER NOT NULL DEFAULT 1
+  CHECK (hotkey_enabled IN (0,1));
+ALTER TABLE settings ADD COLUMN hotkey_combination TEXT NOT NULL DEFAULT 'Win+Alt+A';
+"""
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4]
 
 
 def _connect() -> sqlite3.Connection:

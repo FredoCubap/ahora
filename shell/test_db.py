@@ -138,7 +138,7 @@ _conn.close()
 
 db.migrate()
 _conn = sqlite3.connect(db.DB_PATH)
-assert _conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 3
+assert _conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS)
 _conn.close()
 assert [i["title"] for i in db.list_items()] == ["anterior a la V3"], "la V3 perdió un ítem"
 assert db.get_settings()["work_start"] == "08:30", "la V3 perdió un ajuste"
@@ -155,6 +155,38 @@ assert db.get_settings()["theme"] == "oscuro", "un tema inválido pisó el guard
 
 db.migrate()  # idempotente: no vuelve a correr la V3 ni toca el tema elegido
 assert db.get_settings()["theme"] == "oscuro"
+
+# --- Migración V4: atajo global ---
+# Una base en la versión 3, con datos, sube a la 4 sin perder nada y deja el
+# atajo activo con la combinación por defecto.
+db.DB_PATH = os.path.join(_tmpdir, "v3.db")
+_conn = sqlite3.connect(db.DB_PATH)
+for _sql in db.MIGRATIONS[:3]:
+    _conn.executescript(_sql)
+_conn.execute("PRAGMA user_version = 3")
+_conn.execute("INSERT INTO item (title) VALUES ('anterior a la V4')")
+_conn.execute("UPDATE settings SET theme = 'oscuro'")
+_conn.commit()
+_conn.close()
+
+db.migrate()
+_conn = sqlite3.connect(db.DB_PATH)
+assert _conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 4
+_conn.close()
+assert [i["title"] for i in db.list_items()] == ["anterior a la V4"], "la V4 perdió un ítem"
+assert db.get_settings()["theme"] == "oscuro", "la V4 perdió un ajuste"
+assert db.get_settings()["hotkey_enabled"] == 1
+assert db.get_settings()["hotkey_combination"] == "Win+Alt+A"
+
+db.update_settings({"hotkey_enabled": 0, "hotkey_combination": "Ctrl+Alt+N"})
+assert db.get_settings()["hotkey_enabled"] == 0
+assert db.get_settings()["hotkey_combination"] == "Ctrl+Alt+N"
+try:
+    db.update_settings({"hotkey_enabled": 2})
+    raise AssertionError("la base aceptó hotkey_enabled = 2")
+except sqlite3.IntegrityError:
+    pass
+
 db.DB_PATH = _nueva
 
 shutil.rmtree(_tmpdir, ignore_errors=True)
