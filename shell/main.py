@@ -49,6 +49,7 @@ except ImportError:
 
 import autostart
 import db
+import hotkey as hotkey_mod
 import recurrence
 import tray as tray_mod
 
@@ -68,6 +69,19 @@ WINDOW_HEIGHT = 800
 # destruir; el manejador la mira y deja pasar el cierre. No hace falta bajarla:
 # tras levantarla el proceso termina.
 _quitting = threading.Event()
+
+# La ventana está escondida en la bandeja. pywebview no expone si lo está, así
+# que se lleva a mano: la levanta la X (y el arranque con `--hidden`) y la baja
+# `_show_window`.
+_hidden = threading.Event()
+
+# La captura se abrió con el atajo global desde la bandeja: al cerrarla hay que
+# volver a esconder la ventana (`captura_closed`). Si la ventana ya estaba
+# visible, no se levanta y la captura se cierra sin tocarla.
+_restore_on_captura_close = threading.Event()
+
+# Lo que recibe el frontend cuando el atajo abre la captura (ver App.tsx).
+CAPTURA_EVENT_JS = "window.dispatchEvent(new CustomEvent('ahora:captura'))"
 
 
 class _NoCacheHandler(http.server.SimpleHTTPRequestHandler):
@@ -147,8 +161,9 @@ class Api:
     no son SQL y por eso viven acá, de vuelta de sus plugins anteriores.
     """
 
-    def __init__(self, tray):
+    def __init__(self, tray, hotkey):
         self._tray = tray
+        self._hotkey = hotkey
 
     # --- datos ---
 
@@ -224,6 +239,43 @@ class Api:
         """
         return autostart.set_enabled(bool(enabled))
 
+    def get_hotkey_status(self):
+        """Estado del atajo global: `{active, reason}`. Ajustes lo muestra."""
+        return self._hotkey.status()
+
+    def configure_hotkey(self, enabled, combination):
+        """Activa, desactiva o cambia el atajo, y lo guarda si se pudo aplicar.
+
+        Una combinación inválida se rechaza sin tocar el atajo ni lo guardado
+        (`reason: "invalida"`). Una ocupada sí se guarda: puede liberarse luego,
+        y Ajustes muestra el motivo. Devuelve lo que quedó guardado más el
+        estado, para que el frontend muestre la verdad.
+        """
+        enabled = bool(enabled)
+        try:
+            hotkey_mod.parse_combination(combination)
+        except ValueError:
+            saved = db.get_settings()
+            return {
+                **self._hotkey.status(),
+                "reason": hotkey_mod.REASON_INVALID,
+                "enabled": bool(saved["hotkey_enabled"]),
+                "combination": saved["hotkey_combination"],
+            }
+        db.update_settings({"hotkey_enabled": int(enabled), "hotkey_combination": combination})
+        if enabled:
+            status = self._hotkey.start(combination)
+        else:
+            self._hotkey.stop()
+            status = self._hotkey.status()
+        return {**status, "enabled": enabled, "combination": combination}
+
+    def captura_closed(self):
+        """El frontend cerró la captura: si la abrió el atajo desde la bandeja,
+        vuelve a esconder la ventana."""
+        for window in list(webview.windows):
+            restore_after_captura(window)
+
     def notify(self, title, body=""):
         """Notificación del sistema operativo, para cuando la ventana está oculta."""
         return self._tray.notify(title, body)
@@ -242,8 +294,45 @@ def _show_window(window) -> None:
     """
     try:
         window.show()
+        _hidden.clear()
     except Exception:
         pass
+
+
+def open_captura(window) -> None:
+    """Lo que hace el atajo global: ventana al frente y captura abierta.
+
+    Si la ventana estaba en la bandeja, se anota para devolverla ahí al cerrar
+    la captura. Si ya había una captura pendiente de restaurar (el atajo se
+    pulsó dos veces) no se borra la anotación: la ventana ya está visible, pero
+    sigue siendo cierto que antes estaba escondida.
+    """
+    if _hidden.is_set():
+        _restore_on_captura_close.set()
+    _show_window(window)
+    try:
+        window.evaluate_js(CAPTURA_EVENT_JS)
+    except Exception:
+        pass  # la página aún no cargó: la ventana al frente ya es útil
+
+
+def restore_after_captura(window) -> None:
+    """Devuelve la ventana a la bandeja si la captura la había sacado de ella."""
+    if not _restore_on_captura_close.is_set():
+        return
+    _restore_on_captura_close.clear()
+    try:
+        window.hide()
+        _hidden.set()
+    except Exception:
+        pass
+
+
+def open_from_tray(window) -> None:
+    """"Abrir Ahora" de la bandeja: el usuario eligió quedarse con la ventana,
+    así que cualquier restauración pendiente de una captura se descarta."""
+    _restore_on_captura_close.clear()
+    _show_window(window)
 
 
 def _quit_app() -> None:
@@ -289,6 +378,7 @@ def make_close_handler(window):
         if _quitting.is_set():
             return True
         window.hide()
+        _hidden.set()
         return False
 
     return on_closing
@@ -301,12 +391,21 @@ def main() -> None:
     # Con `--hidden` (autostart) la app arranca en bandeja sin molestar. Sin
     # él, se muestra normalmente.
     start_hidden = "--hidden" in sys.argv
+    if start_hidden:
+        _hidden.set()
 
     # El ícono de bandeja se crea antes que la ventana, pero sus acciones
     # hablan de `window` — que todavía no existe. Eso está bien porque las
     # funciones se evalúan recién cuando alguien toca el menú, y para entonces
     # `window` ya tiene valor (los closures ven la variable, no su valor).
-    tray = tray_mod.Tray(on_open=lambda: _show_window(window), on_quit=_quit_app)
+    tray = tray_mod.Tray(on_open=lambda: open_from_tray(window), on_quit=_quit_app)
+
+    # El atajo global se arranca con lo guardado. Un atajo ocupado o inválido
+    # no impide nada: queda inactivo y Ajustes dice por qué.
+    hotkey = hotkey_mod.Hotkey(lambda: open_captura(window))
+    settings = db.get_settings()
+    if settings["hotkey_enabled"]:
+        hotkey.start(settings["hotkey_combination"])
 
     window = webview.create_window(
         APP_NAME,
@@ -315,7 +414,7 @@ def main() -> None:
         height=WINDOW_HEIGHT,
         hidden=start_hidden,
         min_size=(380, 520),
-        js_api=Api(tray),
+        js_api=Api(tray, hotkey),
     )
 
     window.events.closing += make_close_handler(window)
@@ -333,6 +432,7 @@ def main() -> None:
         # Salir de `start()` significa que no queda ninguna ventana: la app
         # terminó. Se baja el ícono de bandeja para que no quede un fantasma.
         tray.stop()
+        hotkey.stop()
 
 
 if __name__ == "__main__":
