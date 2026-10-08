@@ -1,3 +1,4 @@
+import { HotkeyResult, HotkeyStatus } from "./hotkey";
 import { Item, NewItem, NewRecurrenceRule, Occurrence, RecurrenceRule, Settings } from "./types";
 
 // Puente al shell Python (ver shell/main.py). pywebview inyecta
@@ -30,6 +31,10 @@ export interface PywebviewApi {
   set_autostart(enabled: boolean): Promise<boolean>;
   notify(title: string, body: string): Promise<boolean>;
   quit(): Promise<void>;
+  get_hotkey_status(): Promise<HotkeyStatus>;
+  configure_hotkey(enabled: boolean, combination: string): Promise<HotkeyResult>;
+  /** La captura se cerró: si la abrió el atajo desde la bandeja, esconde la ventana. */
+  captura_closed(): Promise<void>;
 }
 
 declare global {

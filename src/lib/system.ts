@@ -1,3 +1,4 @@
+import { HotkeyResult, HotkeyStatus } from "./hotkey";
 import { getApi } from "./pywebviewApi";
 
 /**
@@ -39,5 +40,41 @@ export async function quitApp(): Promise<void> {
     await api.quit();
   } catch {
     // Si no se pudo cerrar desde adentro, no hay mucho más que hacer desde acá.
+  }
+}
+
+/** Estado del atajo global. `null` si no se pudo preguntar. */
+export async function getHotkeyStatus(): Promise<HotkeyStatus | null> {
+  try {
+    const api = await getApi();
+    return await api.get_hotkey_status();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Activa, desactiva o cambia el atajo global. Devuelve lo que quedó guardado y
+ * el estado real, o `null` si el shell no respondió (entonces no se sabe).
+ */
+export async function configureHotkey(
+  enabled: boolean,
+  combination: string,
+): Promise<HotkeyResult | null> {
+  try {
+    const api = await getApi();
+    return await api.configure_hotkey(enabled, combination);
+  } catch {
+    return null;
+  }
+}
+
+/** Avisa al shell de que la captura se cerró, para que devuelva la ventana a la bandeja. */
+export async function capturaClosed(): Promise<void> {
+  try {
+    const api = await getApi();
+    await api.captura_closed();
+  } catch {
+    // Sin shell no hay ventana que esconder.
   }
 }

@@ -25,6 +25,8 @@ const SETTINGS: Settings = {
   seguimiento_interval_min: 240,
   seguimiento_daily_cap: 3,
   theme: "sistema",
+  hotkey_enabled: 1,
+  hotkey_combination: "Win+Alt+A",
 };
 
 /** "Ahora" fijo: un martes a las 10:00, pleno horario laboral. */

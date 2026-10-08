@@ -64,6 +64,8 @@ export const settingsSchema = z.object({
   seguimiento_interval_min: z.number(),
   seguimiento_daily_cap: z.number(),
   theme: z.enum(THEMES),
+  hotkey_enabled: z.number(),
+  hotkey_combination: z.string(),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
