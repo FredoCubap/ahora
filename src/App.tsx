@@ -7,6 +7,8 @@ import { Semana } from "./routes/Semana";
 import { Ajustes } from "./routes/Ajustes";
 import { AvisoBanner } from "./components/AvisoBanner";
 import { CapturaModal } from "./components/CapturaModal";
+import { CAPTURA_EVENT } from "./lib/hotkey";
+import { capturaClosed } from "./lib/system";
 import { BottomNav } from "./components/BottomNav";
 
 function App() {
@@ -29,6 +31,27 @@ function App() {
     if (theme) applyTheme(theme);
   }, [theme]);
 
+  // El atajo global del shell abre la captura desde cualquier aplicación. Se
+  // recuerda para avisar al cerrarla: solo entonces el shell devuelve la
+  // ventana a la bandeja, y una captura abierta con el "+" no le concierne.
+  const [capturaFromHotkey, setCapturaFromHotkey] = useState(false);
+  useEffect(() => {
+    const onCaptura = () => {
+      setCapturaFromHotkey(true);
+      setCapturaOpen(true);
+    };
+    window.addEventListener(CAPTURA_EVENT, onCaptura);
+    return () => window.removeEventListener(CAPTURA_EVENT, onCaptura);
+  }, []);
+
+  function closeCaptura() {
+    setCapturaOpen(false);
+    if (capturaFromHotkey) {
+      setCapturaFromHotkey(false);
+      void capturaClosed();
+    }
+  }
+
   return (
     <div className="min-h-screen flex justify-center" style={{ background: "var(--ahora-bg)" }}>
       <div className="w-full max-w-[480px] min-h-screen relative">
@@ -40,7 +63,7 @@ function App() {
 
         {showChrome && <BottomNav onAdd={() => setCapturaOpen(true)} />}
 
-        <CapturaModal isOpen={capturaOpen} onClose={() => setCapturaOpen(false)} />
+        <CapturaModal isOpen={capturaOpen} onClose={closeCaptura} />
         <AvisoBanner />
       </div>
     </div>
