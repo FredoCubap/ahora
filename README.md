@@ -136,4 +136,4 @@ Los cambios se proponen con OpenSpec, se verifican con `npm run ci` y el histori
 
 ## Licencia
 
-Proyecto interno. Todos los derechos reservados.
+GPLv3 — ver [LICENSE](LICENSE). Sos libre de usar, modificar y distribuir este programa, con la condición de que lo que derives de él siga siendo libre bajo la misma licencia.
