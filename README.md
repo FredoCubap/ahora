@@ -136,4 +136,4 @@ Los cambios se proponen con OpenSpec, se verifican con `npm run ci` y el histori
 
 ## Licencia
 
-GPLv3 — ver [LICENSE](LICENSE). Sos libre de usar, modificar y distribuir este programa, con la condición de que lo que derives de él siga siendo libre bajo la misma licencia.
+MIT — ver [LICENSE](LICENSE). Sos libre de usar, modificar y distribuir este programa, incluso con fines comerciales, con una sola condición: conservar el aviso de autoría original en las copias. La idea original es de Fredo Cuba.
